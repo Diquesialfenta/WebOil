@@ -124,7 +124,7 @@ const UserDashboard = () => {
                 <img
                   src="https://cdn.builder.io/api/v1/assets/966f3cfa0fff4eb68fda2d512d8d0925/maltero-logo-white-background-a132fd?format=webp&width=800"
                   alt="Maltero Background"
-                  className="w-24 h-24 object-contain animate-float"
+                  className="w-24 h-24 object-contain animate-float flex md:flex sm:flex"
                 />
               </div>
               <div className="flex items-center justify-between relative z-10">
@@ -138,15 +138,6 @@ const UserDashboard = () => {
                   <p className="text-white/90 text-lg">
                     Bienvenido a tu panel de intercambio de aceite
                   </p>
-                </div>
-                <div className="hidden md:block">
-                  <div className="bg-white/20 rounded-full p-4 ring-4 ring-white/30">
-                    <img
-                      src="https://cdn.builder.io/api/v1/assets/966f3cfa0fff4eb68fda2d512d8d0925/maltero-logo-white-background-a132fd?format=webp&width=800"
-                      alt="Maltero Logo"
-                      className="w-12 h-12 object-contain"
-                    />
-                  </div>
                 </div>
               </div>
             </div>
