@@ -1,0 +1,415 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  ArrowLeft,
+  User,
+  Mail,
+  MapPin,
+  Droplets,
+  Gift,
+  Calendar,
+  TrendingUp,
+  Award,
+  Recycle,
+  Phone,
+  Settings,
+  Edit,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+
+const UserDashboard = () => {
+  // Estado del usuario - estos datos vendrían de Firebase/backend
+  const [userData, setUserData] = useState({
+    nombre: "Juan Carlos Pérez",
+    email: "juan.perez@email.com",
+    direccion: "Calle Principal 123, Ciudad de México",
+    litrosEntregados: 45,
+    litrosCanjeados: 4,
+    ultimaEntrega: "2024-12-15",
+    proximoMilestone: 1000,
+    showRequestButton: true,
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Calcular progreso hacia el próximo premio (cada 1000L)
+  const progresoHaciaPremio = (userData.litrosEntregados % 1000) / 10; // Convertir a porcentaje
+  const litrosParaPremio = 1000 - (userData.litrosEntregados % 1000);
+
+  // Simular solicitud de aceite nuevo
+  const handleSolicitarAceite = async () => {
+    setIsLoading(true);
+    try {
+      // Aquí iría la lógica para conectar con el backend
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      alert(
+        "¡Solicitud enviada! Te contactaremos pronto para coordinar la entrega.",
+      );
+    } catch (error) {
+      alert("Error al enviar solicitud. Intenta nuevamente.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Formatear fecha
+  const formatearFecha = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-brand-50/30 to-trust-50/20">
+      {/* Header */}
+      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Link to="/" className="transition-transform hover:scale-105">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center w-16 h-16 bg-white rounded-xl p-2 shadow-lg ring-2 ring-brand-100 animate-float">
+                <img
+                  src="https://cdn.builder.io/api/v1/assets/966f3cfa0fff4eb68fda2d512d8d0925/maltero-logo-white-background-a132fd?format=webp&width=800"
+                  alt="Maltero Logo"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Maltero</h1>
+                <p className="text-sm text-muted-foreground font-medium">
+                  User Dashboard
+                </p>
+              </div>
+            </div>
+          </Link>
+          <div className="flex items-center space-x-4">
+            <Badge variant="secondary" className="hidden sm:flex">
+              <Phone className="h-3 w-3 mr-1" />
+              +1 (555) 123-4567
+            </Badge>
+            <Link to="/admin">
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-1" />
+                Admin
+              </Button>
+            </Link>
+            <Link to="/">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Home
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Welcome Section */}
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
+              {/* Background Logo */}
+              <div className="absolute top-4 right-4 opacity-10">
+                <img
+                  src="https://cdn.builder.io/api/v1/assets/966f3cfa0fff4eb68fda2d512d8d0925/maltero-logo-white-background-a132fd?format=webp&width=800"
+                  alt="Maltero Background"
+                  className="w-24 h-24 object-contain animate-float"
+                />
+              </div>
+              <div className="flex items-center justify-between relative z-10">
+                <div>
+                  <h1
+                    id="saludoUsuario"
+                    className="text-2xl md:text-3xl font-bold mb-2"
+                  >
+                    Hola, <span id="nombreUsuario">{userData.nombre}</span>! 👋
+                  </h1>
+                  <p className="text-white/90 text-lg">
+                    Bienvenido a tu panel de intercambio de aceite
+                  </p>
+                </div>
+                <div className="hidden md:block">
+                  <div className="bg-white/20 rounded-full p-4 ring-4 ring-white/30">
+                    <img
+                      src="https://cdn.builder.io/api/v1/assets/966f3cfa0fff4eb68fda2d512d8d0925/maltero-logo-white-background-a132fd?format=webp&width=800"
+                      alt="Maltero Logo"
+                      className="w-12 h-12 object-contain"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Dashboard Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Datos Personales */}
+            <div className="lg:col-span-1">
+              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm h-fit">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <User className="h-5 w-5 mr-2 text-trust-600" />
+                    Datos Personales
+                  </CardTitle>
+                  <CardDescription>Tu información de perfil</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <User className="h-5 w-5 text-gray-500 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-600">
+                          Nombre completo
+                        </p>
+                        <p
+                          id="nombreCompleto"
+                          className="text-base font-semibold text-foreground"
+                        >
+                          {userData.nombre}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <Mail className="h-5 w-5 text-gray-500 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-600">
+                          Correo electrónico
+                        </p>
+                        <p
+                          id="emailUsuario"
+                          className="text-base font-semibold text-foreground"
+                        >
+                          {userData.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-600">
+                          Dirección
+                        </p>
+                        <p
+                          id="direccionUsuario"
+                          className="text-base font-semibold text-foreground"
+                        >
+                          {userData.direccion}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button variant="outline" className="w-full mt-4">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar Información
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Actividad y Estadísticas */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Estadísticas Principales */}
+              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <TrendingUp className="h-5 w-5 mr-2 text-brand-600" />
+                    Tu Actividad de Intercambio
+                  </CardTitle>
+                  <CardDescription>
+                    Resumen de tus intercambios de aceite
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Litros Entregados */}
+                    <div className="text-center p-4 bg-red-50 rounded-xl border border-red-100">
+                      <div className="bg-red-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                        <Droplets className="h-6 w-6 text-white" />
+                      </div>
+                      <div
+                        className="text-3xl font-bold text-red-600"
+                        id="litrosEntregados"
+                      >
+                        {userData.litrosEntregados}L
+                      </div>
+                      <p className="text-sm font-medium text-red-700">
+                        Litros de aceite entregados
+                      </p>
+                    </div>
+
+                    {/* Litros Canjeados */}
+                    <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
+                      <div className="bg-green-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                        <Recycle className="h-6 w-6 text-white" />
+                      </div>
+                      <div
+                        className="text-3xl font-bold text-green-600"
+                        id="litrosCanjeados"
+                      >
+                        {userData.litrosCanjeados}L
+                      </div>
+                      <p className="text-sm font-medium text-green-700">
+                        Litros de aceite nuevo obtenidos
+                      </p>
+                    </div>
+
+                    {/* Última Entrega */}
+                    <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
+                      <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                        <Calendar className="h-6 w-6 text-white" />
+                      </div>
+                      <div
+                        className="text-lg font-bold text-blue-600"
+                        id="ultimaEntrega"
+                      >
+                        {formatearFecha(userData.ultimaEntrega)}
+                      </div>
+                      <p className="text-sm font-medium text-blue-700">
+                        Última entrega
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Programa de Fidelidad */}
+              <Card className="shadow-xl border-0 bg-gradient-to-r from-purple-50 to-pink-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Award className="h-5 w-5 mr-2 text-purple-600" />
+                    Programa de Fidelidad
+                  </CardTitle>
+                  <CardDescription>
+                    Progreso hacia tu próximo premio especial
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">
+                      Progreso hacia 1000L
+                    </span>
+                    <span className="text-sm font-bold text-purple-600">
+                      {userData.litrosEntregados}/1000L
+                    </span>
+                  </div>
+
+                  <Progress value={progresoHaciaPremio} className="h-3" />
+
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">
+                      Faltan {litrosParaPremio}L para tu próximo premio
+                    </span>
+                    <Badge
+                      variant="secondary"
+                      className="bg-purple-100 text-purple-700"
+                    >
+                      <Gift className="h-3 w-3 mr-1" />
+                      Premio: Sorpresa especial
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Botón de Solicitud */}
+              {userData.showRequestButton && (
+                <Card className="shadow-xl border-0 bg-gradient-to-r from-brand-100 to-brand-50">
+                  <CardContent className="pt-6">
+                    <div className="text-center space-y-4">
+                      <div className="bg-brand-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+                        <Droplets className="h-8 w-8 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-foreground mb-2">
+                          ¿Tienes aceite nuevo disponible?
+                        </h3>
+                        <p className="text-muted-foreground mb-4">
+                          Solicita la entrega de tu aceite nuevo basado en tus
+                          intercambios anteriores
+                        </p>
+                      </div>
+
+                      <Button
+                        id="botonCanje"
+                        onClick={handleSolicitarAceite}
+                        disabled={isLoading}
+                        className="bg-brand-600 hover:bg-brand-700 text-white px-8 py-3 text-lg h-14"
+                      >
+                        {isLoading ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Enviando solicitud...
+                          </div>
+                        ) : (
+                          <>
+                            <Gift className="h-5 w-5 mr-2" />
+                            Solicitar aceite nuevo
+                          </>
+                        )}
+                      </Button>
+
+                      <p className="text-xs text-muted-foreground">
+                        * Basado en tu ratio de intercambio actual:{" "}
+                        {userData.litrosCanjeados}L disponibles
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+
+          {/* Información Adicional */}
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border-0 bg-white/80 shadow-lg">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="bg-trust-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">
+                    <Recycle className="h-6 w-6 text-trust-600" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Ratio de Intercambio</h3>
+                  <p className="text-2xl font-bold text-trust-600">10:1</p>
+                  <p className="text-sm text-muted-foreground">
+                    10L aceite usado = 1L aceite nuevo
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 bg-white/80 shadow-lg">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">
+                    <Award className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Impacto Ambiental</h3>
+                  <p className="text-2xl font-bold text-green-600">
+                    {Math.round(userData.litrosEntregados * 0.95)}L
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Aceite reciclado correctamente
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default UserDashboard;
