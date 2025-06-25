@@ -30,8 +30,9 @@ const UserDashboard = () => {
   // Estado del usuario - estos datos vendrían de Firebase/backend
   const [userData, setUserData] = useState({
     nombre: "Juan Carlos Pérez",
-    email: "juan.perez@email.com",
-    direccion: "Calle Principal 123, Ciudad de México",
+    email: "malteromalta@gmail.com",
+    direccion:
+      "No. 1, Tal-Barrani Industrial Park, Triq il-Belt Valletta, Ghaxaq, Malta",
     litrosEntregados: 45,
     litrosCanjeados: 4,
     ultimaEntrega: "2024-12-15",
@@ -95,7 +96,7 @@ const UserDashboard = () => {
           <div className="flex items-center space-x-4">
             <Badge variant="secondary" className="hidden sm:flex">
               <Phone className="h-3 w-3 mr-1" />
-              +1 (555) 123-4567
+              +356 9919 0222
             </Badge>
             <Link to="/admin">
               <Button variant="outline" size="sm">
