@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { SupabaseSetupInfo } from "@/components/SupabaseSetupInfo";
 
 const Auth = () => {
   const { user, signUp, signIn, signOut } = useAuth();
