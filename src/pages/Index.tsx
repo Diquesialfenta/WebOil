@@ -643,9 +643,11 @@ const Index = () => {
             <div>
               <h4 className="font-semibold mb-4">Contact</h4>
               <ul className="space-y-2 text-sm opacity-80">
-                <li>+1 (555) 123-4567</li>
-                <li>info@maltero.com</li>
-                <li>San Francisco, CA</li>
+                <li>+356 9919 0222</li>
+                <li>malteromalta@gmail.com</li>
+                <li>No. 1, Tal-Barrani Industrial Park</li>
+                <li>Triq il-Belt Valletta, Ghaxaq, Malta</li>
+                <li>Environmental Permit No. 017/16/A</li>
                 <li>Mon-Fri: 8AM-6PM</li>
               </ul>
             </div>
