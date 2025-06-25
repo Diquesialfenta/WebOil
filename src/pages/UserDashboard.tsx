@@ -29,10 +29,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const UserDashboard = () => {
-  // Estado del usuario - estos datos vendrían de Firebase/backend
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  // Estado del usuario - estos datos vendrían de la base de datos
   const [userData, setUserData] = useState({
-    nombre: "Juan Carlos Pérez",
-    email: "malteromalta@gmail.com",
+    nombre: user?.user_metadata?.name || "Usuario",
+    email: user?.email || "usuario@ejemplo.com",
     direccion:
       "No. 1, Tal-Barrani Industrial Park, Triq il-Belt Valletta, Ghaxaq, Malta",
     litrosEntregados: 45,
@@ -41,6 +44,24 @@ const UserDashboard = () => {
     proximoMilestone: 1000,
     showRequestButton: true,
   });
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [user, navigate]);
+
+  // Update user data when auth user changes
+  useEffect(() => {
+    if (user) {
+      setUserData((prev) => ({
+        ...prev,
+        nombre: user.user_metadata?.name || "Usuario",
+        email: user.email || "usuario@ejemplo.com",
+      }));
+    }
+  }, [user]);
 
   const [isLoading, setIsLoading] = useState(false);
 
