@@ -97,9 +97,12 @@ const UserDashboard = () => {
     }
   };
 
-  // Calcular progreso hacia el próximo premio (cada 1000L)
-  const progresoHaciaPremio = (userData.litrosEntregados % 1000) / 10; // Convertir a porcentaje
-  const litrosParaPremio = 1000 - (userData.litrosEntregados % 1000);
+  // Calculate progress towards next reward (every 1000L) using real data
+  const litrosEntregados = userStats?.total_used_oil_delivered || 0;
+  const litrosCanjeados = userStats?.total_new_oil_received || 0;
+  const progresoHaciaPremio = (litrosEntregados % 1000) / 10; // Convert to percentage
+  const litrosParaPremio = 1000 - (litrosEntregados % 1000);
+  const availableNewOil = Math.floor(litrosEntregados / 10) - litrosCanjeados;
 
   // Create real oil request order
   const handleSolicitarAceite = async () => {
