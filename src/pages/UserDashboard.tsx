@@ -259,7 +259,9 @@ const UserDashboard = () => {
                           id="nombreCompleto"
                           className="text-base font-semibold text-foreground"
                         >
-                          {userData.nombre}
+                          {userStats?.name ||
+                            user?.user_metadata?.name ||
+                            "Usuario"}
                         </p>
                       </div>
                     </div>
