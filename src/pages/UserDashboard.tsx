@@ -33,18 +33,14 @@ const UserDashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  // Estado del usuario - estos datos vendrían de la base de datos
-  const [userData, setUserData] = useState({
-    nombre: user?.user_metadata?.name || "Usuario",
-    email: user?.email || "usuario@ejemplo.com",
-    direccion:
-      "No. 1, Tal-Barrani Industrial Park, Triq il-Belt Valletta, Ghaxaq, Malta",
-    litrosEntregados: 45,
-    litrosCanjeados: 4,
-    ultimaEntrega: "2024-12-15",
-    proximoMilestone: 1000,
-    showRequestButton: true,
-  });
+  // Real user data from Supabase
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [userOrders, setUserOrders] = useState<OilOrder[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Static address for now - can be made dynamic later
+  const defaultAddress =
+    "No. 1, Tal-Barrani Industrial Park, Triq il-Belt Valletta, Ghaxaq, Malta";
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -53,15 +49,40 @@ const UserDashboard = () => {
     }
   }, [user, navigate]);
 
-  // Update user data when auth user changes
+  // Load real user data from Supabase
   useEffect(() => {
-    if (user) {
-      setUserData((prev) => ({
-        ...prev,
-        nombre: user.user_metadata?.name || "Usuario",
-        email: user.email || "usuario@ejemplo.com",
-      }));
-    }
+    const loadUserData = async () => {
+      if (!user) return;
+
+      setIsLoadingData(true);
+      try {
+        // Load user statistics and orders
+        const [stats, orders] = await Promise.all([
+          ordersService.getUserStats(user.id),
+          ordersService.getUserOrders(user.id),
+        ]);
+
+        setUserStats(stats);
+        setUserOrders(orders);
+      } catch (error) {
+        console.error("Error loading user data:", error);
+        // Set default stats if error
+        setUserStats({
+          user_id: user.id,
+          email: user.email || "",
+          name: user.user_metadata?.name || "Usuario",
+          total_used_oil_delivered: 0,
+          total_new_oil_received: 0,
+          completed_orders: 0,
+          pending_orders: 0,
+          last_delivery_date: null,
+        });
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    loadUserData();
   }, [user]);
 
   const [isLoading, setIsLoading] = useState(false);
