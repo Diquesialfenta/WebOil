@@ -613,6 +613,9 @@ const Auth = () => {
             </Tabs>
           </div>
 
+          {/* Supabase Setup Info */}
+          <SupabaseSetupInfo />
+
           {/* Benefits Section */}
           <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
             <div className="text-center p-6 bg-white/80 rounded-2xl shadow-lg">
