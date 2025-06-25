@@ -276,7 +276,7 @@ const UserDashboard = () => {
                           id="emailUsuario"
                           className="text-base font-semibold text-foreground"
                         >
-                          {userData.email}
+                          {userStats?.email || user?.email || "No especificado"}
                         </p>
                       </div>
                     </div>
