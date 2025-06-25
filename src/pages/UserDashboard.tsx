@@ -219,7 +219,13 @@ const UserDashboard = () => {
                     id="saludoUsuario"
                     className="text-2xl md:text-3xl font-bold mb-2"
                   >
-                    Hola, <span id="nombreUsuario">{userData.nombre}</span>! 👋
+                    Hola,{" "}
+                    <span id="nombreUsuario">
+                      {userStats?.name ||
+                        user?.user_metadata?.name ||
+                        "Usuario"}
+                    </span>
+                    ! 👋
                   </h1>
                   <p className="text-white/90 text-lg">
                     Bienvenido a tu panel de intercambio de aceite
