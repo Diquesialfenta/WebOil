@@ -42,6 +42,7 @@ import {
 import { Link } from "react-router-dom";
 
 const Index = () => {
+  const { user, signOut } = useAuth();
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [wasteType, setWasteType] = useState("oil");
