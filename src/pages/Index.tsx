@@ -143,11 +143,24 @@ const Index = () => {
               <Phone className="h-3 w-3 mr-1" />
               +356 9919 0222
             </Badge>
-            <Link to="/auth">
-              <Button variant="outline" size="sm">
-                Sign In
-              </Button>
-            </Link>
+            {user ? (
+              <div className="flex items-center space-x-2">
+                <Link to="/dashboard">
+                  <Button variant="outline" size="sm">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={() => signOut()}>
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <Link to="/auth">
+                <Button variant="outline" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
