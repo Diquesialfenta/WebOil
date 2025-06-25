@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { ordersService } from "@/lib/orders";
 import {
   Card,
   CardContent,
@@ -59,45 +60,44 @@ const Index = () => {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const requestId = generateRequestId();
+    // Check if user is logged in
+    if (!user) {
+      alert("Please sign in first to submit an oil exchange request.");
+      return;
+    }
+
     const newOilLiters = Math.floor(parseInt(usedOilLiters || "0") / 10);
 
-    const newRequest = {
-      id: requestId,
-      date: selectedDate,
-      time: selectedTime,
-      wasteType,
-      address,
-      notes,
-      usedOilLiters: parseInt(usedOilLiters || "0"),
-      newOilLiters,
-      status: "pending" as const,
-      createdAt: new Date(),
-    };
+    try {
+      // Create real order in Supabase
+      const newOrder = await ordersService.createOrder({
+        used_oil_liters: parseInt(usedOilLiters || "0"),
+        pickup_address: address,
+        pickup_date: selectedDate,
+        pickup_time: selectedTime,
+        notes: notes || undefined,
+      });
 
-    // Save to localStorage (in production, this would be sent to your backend)
-    const existingRequests = JSON.parse(
-      localStorage.getItem("wasteRequests") || "[]",
-    );
-    const updatedRequests = [...existingRequests, newRequest];
-    localStorage.setItem("wasteRequests", JSON.stringify(updatedRequests));
+      console.log("New exchange order created:", newOrder);
 
-    console.log("New exchange request:", newRequest);
+      alert(
+        `Exchange Request Submitted!\n\nOrder ID: ${newOrder.id.slice(-8)}\n\nYou'll receive: ${newOilLiters}L of new oil\nFor: ${usedOilLiters}L of used oil\n\nWe'll contact you soon to schedule the exchange!`,
+      );
 
-    alert(
-      `Exchange Request Submitted!\n\nRequest ID: ${requestId.slice(-8)}\n\nYou'll receive: ${newOilLiters}L of new oil\nFor: ${usedOilLiters}L of used oil\n\nWe'll contact you soon to schedule the exchange!`,
-    );
-
-    // Reset form
-    setSelectedDate("");
-    setSelectedTime("");
-    setWasteType("oil");
-    setAddress("");
-    setNotes("");
-    setUsedOilLiters("");
+      // Reset form
+      setSelectedDate("");
+      setSelectedTime("");
+      setWasteType("oil");
+      setAddress("");
+      setNotes("");
+      setUsedOilLiters("");
+    } catch (error) {
+      console.error("Error creating order:", error);
+      alert("Error submitting request. Please try again.");
+    }
   };
 
   const timeSlots = [
