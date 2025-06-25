@@ -65,6 +65,16 @@ const UserDashboard = () => {
 
   const [isLoading, setIsLoading] = useState(false);
 
+  // Handle logout
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   // Calcular progreso hacia el próximo premio (cada 1000L)
   const progresoHaciaPremio = (userData.litrosEntregados % 1000) / 10; // Convertir a porcentaje
   const litrosParaPremio = 1000 - (userData.litrosEntregados % 1000);
