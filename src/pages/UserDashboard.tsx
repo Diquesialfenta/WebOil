@@ -131,12 +131,10 @@ const UserDashboard = () => {
               <Phone className="h-3 w-3 mr-1" />
               +356 9919 0222
             </Badge>
-            <Link to="/admin">
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-1" />
-                Admin
-              </Button>
-            </Link>
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-1" />
+              Sign Out
+            </Button>
             <Link to="/">
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-1" />
