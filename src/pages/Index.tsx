@@ -139,7 +139,7 @@ const Index = () => {
           <div className="flex items-center space-x-4">
             <Badge variant="secondary" className="hidden sm:flex">
               <Phone className="h-3 w-3 mr-1" />
-              +1 (555) 123-4567
+              +356 9919 0222
             </Badge>
             <Link to="/admin">
               <Button variant="outline" size="sm">
