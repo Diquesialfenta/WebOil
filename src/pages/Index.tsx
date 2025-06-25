@@ -141,12 +141,6 @@ const Index = () => {
               <Phone className="h-3 w-3 mr-1" />
               +356 9919 0222
             </Badge>
-            <Link to="/admin">
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-1" />
-                Admin
-              </Button>
-            </Link>
             <Link to="/auth">
               <Button variant="outline" size="sm">
                 Sign In
