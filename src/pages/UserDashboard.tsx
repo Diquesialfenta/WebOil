@@ -101,16 +101,45 @@ const UserDashboard = () => {
   const progresoHaciaPremio = (userData.litrosEntregados % 1000) / 10; // Convertir a porcentaje
   const litrosParaPremio = 1000 - (userData.litrosEntregados % 1000);
 
-  // Simular solicitud de aceite nuevo
+  // Create real oil request order
   const handleSolicitarAceite = async () => {
+    if (!user || !userStats) return;
+
     setIsLoading(true);
     try {
-      // Aquí iría la lógica para conectar con el backend
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Calculate available new oil based on delivered oil
+      const availableNewOil =
+        Math.floor(userStats.total_used_oil_delivered / 10) -
+        userStats.total_new_oil_received;
+
+      if (availableNewOil <= 0) {
+        alert(
+          "No tienes aceite nuevo disponible para solicitar. Entrega más aceite usado primero.",
+        );
+        return;
+      }
+
+      // Create delivery request
+      await ordersService.createOrder({
+        used_oil_liters: 0, // This is a delivery request, not pickup
+        pickup_address: defaultAddress,
+        pickup_date: new Date().toISOString().split("T")[0],
+        notes: `Solicitud de entrega de ${availableNewOil}L de aceite nuevo`,
+      });
+
       alert(
-        "¡Solicitud enviada! Te contactaremos pronto para coordinar la entrega.",
+        `¡Solicitud enviada! Te contactaremos pronto para coordinar la entrega de ${availableNewOil}L de aceite nuevo.`,
       );
+
+      // Reload data
+      const [stats, orders] = await Promise.all([
+        ordersService.getUserStats(user.id),
+        ordersService.getUserOrders(user.id),
+      ]);
+      setUserStats(stats);
+      setUserOrders(orders);
     } catch (error) {
+      console.error("Error creating order:", error);
       alert("Error al enviar solicitud. Intenta nuevamente.");
     } finally {
       setIsLoading(false);
