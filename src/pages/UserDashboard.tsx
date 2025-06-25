@@ -329,7 +329,7 @@ const UserDashboard = () => {
                         className="text-3xl font-bold text-red-600"
                         id="litrosEntregados"
                       >
-                        {userData.litrosEntregados}L
+                        {isLoadingData ? "..." : `${litrosEntregados}L`}
                       </div>
                       <p className="text-sm font-medium text-red-700">
                         Litros de aceite entregados
@@ -345,7 +345,7 @@ const UserDashboard = () => {
                         className="text-3xl font-bold text-green-600"
                         id="litrosCanjeados"
                       >
-                        {userData.litrosCanjeados}L
+                        {isLoadingData ? "..." : `${litrosCanjeados}L`}
                       </div>
                       <p className="text-sm font-medium text-green-700">
                         Litros de aceite nuevo obtenidos
@@ -361,7 +361,13 @@ const UserDashboard = () => {
                         className="text-lg font-bold text-blue-600"
                         id="ultimaEntrega"
                       >
-                        {formatearFecha(userData.ultimaEntrega)}
+                        {isLoadingData
+                          ? "..."
+                          : userStats?.last_delivery_date
+                            ? formatearFecha(
+                                userStats.last_delivery_date.split("T")[0],
+                              )
+                            : "Sin entregas"}
                       </div>
                       <p className="text-sm font-medium text-blue-700">
                         Última entrega
@@ -388,7 +394,7 @@ const UserDashboard = () => {
                       Progreso hacia 1000L
                     </span>
                     <span className="text-sm font-bold text-purple-600">
-                      {userData.litrosEntregados}/1000L
+                      {litrosEntregados}/1000L
                     </span>
                   </div>
 
@@ -410,7 +416,7 @@ const UserDashboard = () => {
               </Card>
 
               {/* Botón de Solicitud */}
-              {userData.showRequestButton && (
+              {availableNewOil > 0 && (
                 <Card className="shadow-xl border-0 bg-gradient-to-r from-brand-100 to-brand-50">
                   <CardContent className="pt-6">
                     <div className="text-center space-y-4">
@@ -448,7 +454,7 @@ const UserDashboard = () => {
 
                       <p className="text-xs text-muted-foreground">
                         * Basado en tu ratio de intercambio actual:{" "}
-                        {userData.litrosCanjeados}L disponibles
+                        {availableNewOil}L disponibles
                       </p>
                     </div>
                   </CardContent>
@@ -482,7 +488,7 @@ const UserDashboard = () => {
                   </div>
                   <h3 className="font-semibold mb-2">Impacto Ambiental</h3>
                   <p className="text-2xl font-bold text-green-600">
-                    {Math.round(userData.litrosEntregados * 0.95)}L
+                    {Math.round(litrosEntregados * 0.95)}L
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Aceite reciclado correctamente
