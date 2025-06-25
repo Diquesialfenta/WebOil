@@ -23,8 +23,10 @@ import {
   Phone,
   Settings,
   Edit,
+  LogOut,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const UserDashboard = () => {
   // Estado del usuario - estos datos vendrían de Firebase/backend
