@@ -229,33 +229,37 @@ export const ordersService = {
       try {
         // Send a custom event that can be listened to by user dashboards
         const notificationPayload = {
-          type: 'ORDER_COMPLETED',
+          type: "ORDER_COMPLETED",
           order_id: orderId,
           user_id: data.user_id,
           used_oil_liters: data.used_oil_liters,
           new_oil_liters: data.new_oil_liters,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         };
 
-        console.log('📡 Sending real-time notification:', notificationPayload);
+        console.log("📡 Sending real-time notification:", notificationPayload);
 
         // Use Supabase realtime to broadcast the change
-        const channel = supabase.channel('order_updates');
+        const channel = supabase.channel("order_updates");
 
         await channel.send({
-          type: 'broadcast',
-          event: 'order_completed',
-          payload: notificationPayload
+          type: "broadcast",
+          event: "order_completed",
+          payload: notificationPayload,
         });
 
-        console.log('✅ Real-time notification sent successfully');
+        console.log("✅ Real-time notification sent successfully");
 
         // Close the channel after sending
         await supabase.removeChannel(channel);
       } catch (realtimeError) {
-        console.error('❌ Error sending real-time notification:', realtimeError);
+        console.error(
+          "❌ Error sending real-time notification:",
+          realtimeError,
+        );
         // Don't fail the order update if notification fails
       }
+    }
 
     return data;
   },
