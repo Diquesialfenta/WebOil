@@ -31,6 +31,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ordersService, UserStats, OilOrder } from "@/lib/orders";
 import { DatabaseSetupInfo } from "@/components/DatabaseSetupInfo";
 import { DebugInfo } from "@/components/DebugInfo";
+import { UpdateNotification } from "@/components/UpdateNotification";
 
 const UserDashboard = () => {
   const { user, signOut } = useAuth();
@@ -42,6 +43,8 @@ const UserDashboard = () => {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [showDatabaseSetup, setShowDatabaseSetup] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState("");
 
   // Static address for now - can be made dynamic later
   const defaultAddress =
@@ -74,6 +77,12 @@ const UserDashboard = () => {
       setUserStats(stats);
       setUserOrders(orders);
       setShowDebugInfo(false); // Hide debug info on successful load
+
+      // Show update notification if this is a manual refresh
+      if (isRefreshing) {
+        setUpdateMessage("Dashboard updated with latest data!");
+        setShowUpdateNotification(true);
+      }
     } catch (error: any) {
       console.error("Error loading user data:", error);
 
