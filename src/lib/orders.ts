@@ -76,47 +76,28 @@ export const ordersService = {
     return data;
   },
 
-  // Get user's orders with localStorage fallback
+  // Get user's orders (database should be configured now)
   async getUserOrders(userId?: string): Promise<OilOrder[]> {
     if (!supabase) throw new Error("Supabase not configured");
 
-    try {
-      let query = supabase
-        .from("oil_orders")
-        .select("*")
-        .order("created_at", { ascending: false });
+    let query = supabase
+      .from("oil_orders")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-      if (userId) {
-        query = query.eq("user_id", userId);
-      }
-
-      const { data, error } = await query;
-
-      if (!error && data) {
-        console.log("Orders loaded from Supabase:", data);
-        return data;
-      }
-
-      console.log("Supabase failed, checking localStorage:", error);
-    } catch (error) {
-      console.log("Supabase error, using localStorage fallback:", error);
+    if (userId) {
+      query = query.eq("user_id", userId);
     }
 
-    // Fallback to localStorage
-    try {
-      const localOrders = JSON.parse(
-        localStorage.getItem("oil_orders") || "[]",
-      );
-      const userOrders = userId
-        ? localOrders.filter((order: OilOrder) => order.user_id === userId)
-        : localOrders;
+    const { data, error } = await query;
 
-      console.log("Orders loaded from localStorage:", userOrders);
-      return userOrders;
-    } catch (error) {
-      console.error("Error loading from localStorage:", error);
-      return [];
+    if (error) {
+      console.error("Error loading orders from Supabase:", error);
+      throw error;
     }
+
+    console.log("Orders loaded from Supabase:", data);
+    return data || [];
   },
 
   // Get user statistics with localStorage fallback
