@@ -324,11 +324,11 @@ const AdminPanel = () => {
                             <Calendar className="h-4 w-4 text-muted-foreground" />
                             <div>
                               <div className="font-medium">
-                                {order.pickup_date || 'Not specified'}
+                                {order.pickup_date || "Not specified"}
                               </div>
                               <div className="text-sm text-muted-foreground flex items-center">
                                 <Clock className="h-3 w-3 mr-1" />
-                                {order.pickup_time || 'Not specified'}
+                                {order.pickup_time || "Not specified"}
                               </div>
                             </div>
                           </div>
@@ -418,14 +418,17 @@ const AdminPanel = () => {
                                       Date & Time
                                     </Label>
                                     <p className="mt-1">
-                                      {order.pickup_date || 'Not specified'} - {order.pickup_time || 'Not specified'}
+                                      {order.pickup_date || "Not specified"} -{" "}
+                                      {order.pickup_time || "Not specified"}
                                     </p>
                                   </div>
                                   <div className="col-span-2">
                                     <Label className="text-sm font-medium">
                                       Address
                                     </Label>
-                                    <p className="mt-1">{order.pickup_address}</p>
+                                    <p className="mt-1">
+                                      {order.pickup_address}
+                                    </p>
                                   </div>
                                   <div>
                                     <Label className="text-sm font-medium">
@@ -457,7 +460,8 @@ const AdminPanel = () => {
                                       Exchange Rate
                                     </Label>
                                     <p className="mt-1 text-sm text-muted-foreground">
-                                      {order.exchange_rate}:1 ({order.exchange_rate}L used = 1L new)
+                                      {order.exchange_rate}:1 (
+                                      {order.exchange_rate}L used = 1L new)
                                     </p>
                                   </div>
                                   {order.notes && (
@@ -478,14 +482,6 @@ const AdminPanel = () => {
                       </TableRow>
                     ))
                   )}
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
                 </TableBody>
               </Table>
             )}
