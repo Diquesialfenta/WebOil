@@ -50,6 +50,7 @@ const UserDashboard = () => {
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
   const [updateMessage, setUpdateMessage] = useState("");
+  const [realtimeStatus, setRealtimeStatus] = useState<string>("disconnected");
 
   // Static address for now - can be made dynamic later
   const defaultAddress =
