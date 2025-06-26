@@ -259,7 +259,20 @@ export const ordersService = {
     if (!supabase) throw new Error("Supabase not configured");
 
     try {
-      // Get all orders first
+      // First try to use the custom database function that can access auth.users
+      const { data: ordersWithUsers, error: functionError } =
+        await supabase.rpc("get_orders_with_users");
+
+      if (!functionError && ordersWithUsers) {
+        console.log("getAllOrders using database function:", ordersWithUsers);
+        return ordersWithUsers;
+      }
+
+      console.log(
+        "Database function not available, falling back to manual approach...",
+      );
+
+      // Fallback: Get orders and try to get user info manually
       const { data: orders, error } = await supabase
         .from("oil_orders")
         .select("*")
@@ -274,42 +287,36 @@ export const ordersService = {
         return [];
       }
 
-      // For each order, get user information
+      // For each order, try to get user information
       const ordersWithUserInfo = await Promise.all(
         orders.map(async (order) => {
           try {
-            // First try to get from profiles table if it exists
-            const { data: profile, error: profileError } = await supabase
+            // Try to get from profiles table if it exists
+            const { data: profile } = await supabase
               .from("profiles")
               .select("name")
               .eq("id", order.user_id)
-              .single();
+              .maybeSingle();
 
-            // Try to get user email from auth metadata (this should work since user created the order)
-            let userEmail = "Email no disponible";
-            let userName = "Usuario";
-
-            // If we have profile data, use the name from there
-            if (!profileError && profile?.name) {
-              userName = profile.name;
-            }
-
-            // Try to get email from the current user session if this is their order
+            // Check if this is the current user's order to get email
             const {
               data: { user: currentUser },
             } = await supabase.auth.getUser();
+
+            let userEmail = "Email no disponible";
+            let userName = profile?.name || "Usuario";
+
             if (currentUser && currentUser.id === order.user_id) {
               userEmail = currentUser.email || "Email no disponible";
               if (!profile?.name && currentUser.user_metadata?.name) {
                 userName = currentUser.user_metadata.name;
               }
-            }
-
-            // If we still don't have the email, try a different approach
-            // Get the email from when the order was created (should be in user_metadata)
-            if (userEmail === "Email no disponible") {
-              // For now, we'll show a more user-friendly message
-              userEmail = `user_${order.user_id.slice(-8)}@maltero.com`;
+            } else {
+              // For other users, show a generic identifier
+              userEmail = `Cliente ${order.user_id.slice(-8)}`;
+              if (!profile?.name) {
+                userName = `Usuario ${order.user_id.slice(-8)}`;
+              }
             }
 
             return {
@@ -322,34 +329,20 @@ export const ordersService = {
               `Error getting user info for order ${order.id}:`,
               userError,
             );
-            // If can't access user data, use order ID as identifier
             return {
               ...order,
-              user_email: `user_${order.user_id.slice(-8)}@maltero.com`,
+              user_email: `Cliente ${order.user_id.slice(-8)}`,
               user_name: `Usuario ${order.user_id.slice(-8)}`,
             };
           }
         }),
       );
 
-      console.log("getAllOrders with user info:", ordersWithUserInfo);
+      console.log("getAllOrders with manual user info:", ordersWithUserInfo);
       return ordersWithUserInfo;
     } catch (error) {
       console.error("Error in getAllOrders:", error);
-
-      // Final fallback: return orders with partial user info
-      const { data, error: fallbackError } = await supabase
-        .from("oil_orders")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (fallbackError) throw fallbackError;
-
-      return (data || []).map((order) => ({
-        ...order,
-        user_email: `user_${order.user_id.slice(-8)}@maltero.com`,
-        user_name: `Usuario ${order.user_id.slice(-8)}`,
-      }));
+      throw error;
     }
   },
 
