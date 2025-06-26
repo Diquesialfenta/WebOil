@@ -80,10 +80,10 @@ const UserDashboard = () => {
           hint: error.hint,
         });
 
-        // Check if this is a table missing error
-        if (
-          error.code === "42P01" ||
-          error.message?.includes("relation") ||
+        // Tables should exist now, but keep fallback just in case
+        if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+          setShowDatabaseSetup(true);
+        }
           error.message?.includes("does not exist")
         ) {
           setShowDatabaseSetup(true);
