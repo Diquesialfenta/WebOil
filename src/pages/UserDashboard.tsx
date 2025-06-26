@@ -290,6 +290,34 @@ const UserDashboard = () => {
     setIsRefreshing(false);
   };
 
+  // Test function to simulate order completion
+  const testOrderCompletion = () => {
+    if (!user) return;
+
+    console.log("🧪 Testing order completion notification...");
+
+    // Simulate the broadcast message that would come from admin
+    const testPayload = {
+      payload: {
+        type: "ORDER_COMPLETED",
+        order_id: "test-order-123",
+        user_id: user.id,
+        used_oil_liters: 50,
+        new_oil_liters: 5,
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    // Show the notification as if we received it via broadcast
+    setUpdateMessage(
+      `¡Pedido de prueba completado! Entregaste ${testPayload.payload.used_oil_liters}L y recibiste ${testPayload.payload.new_oil_liters}L.`,
+    );
+    setShowUpdateNotification(true);
+
+    // Refresh data
+    loadUserData();
+  };
+
   // Handle logout
   const handleSignOut = async () => {
     try {
