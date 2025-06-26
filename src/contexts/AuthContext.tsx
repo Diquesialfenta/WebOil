@@ -17,17 +17,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    authService.getSession().then((session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Get initial session with error handling
+    authService
+      .getSession()
+      .then((session) => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Session error:", error);
+        // Clear any corrupted session data
+        if (
+          error.message?.includes("Invalid Refresh Token") ||
+          error.message?.includes("Refresh Token Not Found")
+        ) {
+          console.log("Clearing corrupted session...");
+          authService.signOut().catch(() => {}); // Silent cleanup
+        }
+        setUser(null);
+        setLoading(false);
+      });
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = authService.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
+      console.log("Auth state change:", event, session?.user?.id);
+
+      if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+        setUser(session?.user ?? null);
+      } else if (event === "SIGNED_IN") {
+        setUser(session?.user ?? null);
+      }
+
       setLoading(false);
     });
 
