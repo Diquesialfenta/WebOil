@@ -28,6 +28,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { ordersService, UserStats, OilOrder } from "@/lib/orders";
+import { DatabaseSetupInfo } from "@/components/DatabaseSetupInfo";
 
 const UserDashboard = () => {
   const { user, signOut } = useAuth();
