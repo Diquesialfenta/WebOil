@@ -171,7 +171,7 @@ export const ordersService = {
     }
   },
 
-  // Get user statistics
+  // Get user statistics with localStorage fallback
   async getUserStats(userId?: string): Promise<UserStats | null> {
     if (!supabase) throw new Error("Supabase not configured");
 
@@ -184,32 +184,67 @@ export const ordersService = {
 
       const { data, error } = await query.single();
 
-      if (error) {
-        console.log("getUserStats error:", error);
-
-        // If no data found or view doesn't exist, return default stats
-        if (error.code === "PGRST116" || error.code === "42P01") {
-          console.log(
-            "No stats found or table missing, returning default stats",
-          );
-          return {
-            user_id: userId || "",
-            email: "",
-            name: "",
-            total_used_oil_delivered: 0,
-            total_new_oil_received: 0,
-            completed_orders: 0,
-            pending_orders: 0,
-            last_delivery_date: null,
-          };
-        }
-        throw error;
+      if (!error && data) {
+        console.log("Stats loaded from Supabase:", data);
+        return data;
       }
 
-      return data;
+      console.log("Supabase failed, calculating from localStorage:", error);
     } catch (error) {
-      console.error("Error in getUserStats:", error);
-      // Return default stats for any error
+      console.log("Supabase error, using localStorage fallback:", error);
+    }
+
+    // Fallback to localStorage calculation
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const localOrders = JSON.parse(
+        localStorage.getItem("oil_orders") || "[]",
+      );
+      const userOrders = userId
+        ? localOrders.filter((order: OilOrder) => order.user_id === userId)
+        : localOrders;
+
+      const completedOrders = userOrders.filter(
+        (order: OilOrder) => order.status === "completed",
+      );
+      const pendingOrders = userOrders.filter(
+        (order: OilOrder) => order.status === "pending",
+      );
+
+      const totalUsedOil = completedOrders.reduce(
+        (sum: number, order: OilOrder) => sum + order.used_oil_liters,
+        0,
+      );
+      const totalNewOil = completedOrders.reduce(
+        (sum: number, order: OilOrder) => sum + order.new_oil_liters,
+        0,
+      );
+
+      const lastDelivery = completedOrders
+        .filter((order: OilOrder) => order.completed_at)
+        .sort(
+          (a: OilOrder, b: OilOrder) =>
+            new Date(b.completed_at!).getTime() -
+            new Date(a.completed_at!).getTime(),
+        )[0];
+
+      const stats: UserStats = {
+        user_id: userId || "",
+        email: user?.email || "",
+        name: user?.user_metadata?.name || "Usuario",
+        total_used_oil_delivered: totalUsedOil,
+        total_new_oil_received: totalNewOil,
+        completed_orders: completedOrders.length,
+        pending_orders: pendingOrders.length,
+        last_delivery_date: lastDelivery?.completed_at || null,
+      };
+
+      console.log("Stats calculated from localStorage:", stats);
+      return stats;
+    } catch (error) {
+      console.error("Error calculating localStorage stats:", error);
       return {
         user_id: userId || "",
         email: "",
