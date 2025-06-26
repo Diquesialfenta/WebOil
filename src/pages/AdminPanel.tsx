@@ -301,167 +301,183 @@ const AdminPanel = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-mono text-sm">
-                        #{request.id.slice(-8)}
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-4">
+                        Loading orders...
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <div className="font-medium">{request.date}</div>
-                            <div className="text-sm text-muted-foreground flex items-center">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {request.time}
+                    </TableRow>
+                  ) : filteredOrders.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-4">
+                        No orders found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredOrders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-mono text-sm">
+                          #{order.id.slice(-8)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <div className="font-medium">
+                                {order.pickup_date || 'Not specified'}
+                              </div>
+                              <div className="text-sm text-muted-foreground flex items-center">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {order.pickup_time || 'Not specified'}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span className="max-w-[200px] truncate">
-                            {request.address}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-lg">🛢️</span>
-                            <span className="font-medium text-red-600">
-                              {request.usedOilLiters || 0}L Used
-                            </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-start space-x-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                            <div className="text-sm">
+                              {order.pickup_address.length > 50
+                                ? `${order.pickup_address.substring(0, 50)}...`
+                                : order.pickup_address}
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-lg">✨</span>
-                            <span className="font-medium text-green-600">
-                              {request.newOilLiters || 0}L New
-                            </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                                Used: {order.used_oil_liters}L
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                New: {order.new_oil_liters}L
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(request.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                View Details
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>
-                                  Request #{request.id.slice(-8)}
-                                </DialogTitle>
-                                <DialogDescription>
-                                  Complete request details
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="grid grid-cols-2 gap-4 py-4">
-                                <div>
-                                  <Label className="text-sm font-medium">
-                                    Current Status
-                                  </Label>
-                                  <div className="mt-1">
-                                    {getStatusBadge(request.status)}
-                                  </div>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium">
-                                    Date & Time
-                                  </Label>
-                                  <p className="mt-1">
-                                    {request.date} - {request.time}
-                                  </p>
-                                </div>
-                                <div className="col-span-2">
-                                  <Label className="text-sm font-medium">
-                                    Address
-                                  </Label>
-                                  <p className="mt-1">{request.address}</p>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium">
-                                    Oil Exchange Details
-                                  </Label>
-                                  <div className="mt-1 space-y-2">
-                                    <div className="flex items-center justify-between p-2 bg-red-50 rounded">
-                                      <span className="flex items-center">
-                                        <span className="mr-2">🛢️</span>
-                                        Used Oil:
-                                      </span>
-                                      <span className="font-semibold text-red-600">
-                                        {request.usedOilLiters || 0}L
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center justify-between p-2 bg-green-50 rounded">
-                                      <span className="flex items-center">
-                                        <span className="mr-2">✨</span>
-                                        New Oil (FREE):
-                                      </span>
-                                      <span className="font-semibold text-green-600">
-                                        {request.newOilLiters || 0}L
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium">
-                                    Created
-                                  </Label>
-                                  <p className="mt-1 text-sm text-muted-foreground">
-                                    {new Date(
-                                      request.createdAt,
-                                    ).toLocaleString()}
-                                  </p>
-                                </div>
-                                {request.notes && (
-                                  <div className="col-span-2">
+                        </TableCell>
+                        <TableCell>{getStatusBadge(order.status)}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Select
+                              value={order.status}
+                              onValueChange={(value) =>
+                                updateOrderStatus(
+                                  order.id,
+                                  value as OilOrder["status"],
+                                )
+                              }
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="confirmed">
+                                  Confirmed
+                                </SelectItem>
+                                <SelectItem value="in_progress">
+                                  In Progress
+                                </SelectItem>
+                                <SelectItem value="completed">
+                                  Completed
+                                </SelectItem>
+                                <SelectItem value="cancelled">
+                                  Cancelled
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  View Details
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle>
+                                    Order #{order.id.slice(-8)}
+                                  </DialogTitle>
+                                  <DialogDescription>
+                                    Complete order details
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="grid grid-cols-2 gap-4 py-4">
+                                  <div>
                                     <Label className="text-sm font-medium">
-                                      Notes
+                                      Current Status
                                     </Label>
-                                    <p className="mt-1 text-sm">
-                                      {request.notes}
+                                    <div className="mt-1">
+                                      {getStatusBadge(order.status)}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">
+                                      Date & Time
+                                    </Label>
+                                    <p className="mt-1">
+                                      {order.pickup_date || 'Not specified'} - {order.pickup_time || 'Not specified'}
                                     </p>
                                   </div>
-                                )}
-                                <div className="col-span-2 border-t pt-4">
-                                  <Label className="text-sm font-medium">
-                                    Update Status
-                                  </Label>
-                                  <Select
-                                    value={request.status}
-                                    onValueChange={(value) =>
-                                      updateRequestStatus(
-                                        request.id,
-                                        value as WasteRequest["status"],
-                                      )
-                                    }
-                                  >
-                                    <SelectTrigger className="mt-2">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="pending">
-                                        Pending
-                                      </SelectItem>
-                                      <SelectItem value="confirmed">
-                                        Confirmed
-                                      </SelectItem>
-                                      <SelectItem value="in-progress">
-                                        In Progress
-                                      </SelectItem>
-                                      <SelectItem value="completed">
-                                        Completed
-                                      </SelectItem>
-                                      <SelectItem value="cancelled">
-                                        Cancelled
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
+                                  <div className="col-span-2">
+                                    <Label className="text-sm font-medium">
+                                      Address
+                                    </Label>
+                                    <p className="mt-1">{order.pickup_address}</p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">
+                                      Oil Exchange Details
+                                    </Label>
+                                    <div className="mt-1 space-y-2">
+                                      <div className="flex items-center justify-between p-2 bg-red-50 rounded">
+                                        <span className="flex items-center">
+                                          <span className="mr-2">🛢️</span>
+                                          Used Oil:
+                                        </span>
+                                        <span className="font-semibold text-red-600">
+                                          {order.used_oil_liters}L
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center justify-between p-2 bg-green-50 rounded">
+                                        <span className="flex items-center">
+                                          <span className="mr-2">🆕</span>
+                                          New Oil:
+                                        </span>
+                                        <span className="font-semibold text-green-600">
+                                          {order.new_oil_liters}L
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">
+                                      Exchange Rate
+                                    </Label>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                      {order.exchange_rate}:1 ({order.exchange_rate}L used = 1L new)
+                                    </p>
+                                  </div>
+                                  {order.notes && (
+                                    <div className="col-span-2">
+                                      <Label className="text-sm font-medium">
+                                        Notes
+                                      </Label>
+                                      <p className="mt-1 text-sm">
+                                        {order.notes}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                                 </div>
                               </div>
                             </DialogContent>
