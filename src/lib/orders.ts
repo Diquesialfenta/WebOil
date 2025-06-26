@@ -16,6 +16,11 @@ export interface OilOrder {
   completed_at?: string;
 }
 
+export interface OilOrderWithUser extends OilOrder {
+  user_email?: string;
+  user_name?: string;
+}
+
 export interface CreateOrderData {
   used_oil_liters: number;
   pickup_address: string;
