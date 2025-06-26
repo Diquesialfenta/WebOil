@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { authService } from "@/lib/auth";
+import { clearCorruptedAuthData } from "@/lib/authUtils";
 
 export function SessionRecovery() {
   const { user } = useAuth();
@@ -12,18 +13,16 @@ export function SessionRecovery() {
     try {
       // Clear all auth data
       await authService.signOut();
-
-      // Clear any localStorage data
-      localStorage.removeItem("supabase.auth.token");
-      localStorage.removeItem("sb-fmriyqnwzeenkvlmukdk-auth-token");
-
-      // Force reload to reset everything
-      window.location.href = "/auth";
     } catch (error) {
-      console.error("Error clearing session:", error);
-      // Force reload even if signOut fails
-      window.location.href = "/auth";
+      console.error("Error signing out:", error);
+      // Continue with cleanup even if signOut fails
     }
+
+    // Clear corrupted auth data from storage
+    clearCorruptedAuthData();
+
+    // Force reload to reset everything
+    window.location.href = "/auth";
   };
 
   // Only show if there are auth issues
