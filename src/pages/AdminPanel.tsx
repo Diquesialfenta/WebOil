@@ -95,7 +95,7 @@ const AdminPanel = () => {
     }
   };
 
-  const getStatusBadge = (status: WasteRequest["status"]) => {
+  const getStatusBadge = (status: OilOrder["status"]) => {
     const statusConfig = {
       pending: {
         label: "Pending",
