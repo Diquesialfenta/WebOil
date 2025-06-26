@@ -424,7 +424,7 @@ const UserDashboard = () => {
                 {isRefreshing ? "Updating..." : "Refresh"}
               </Button>
 
-              {/* Debug button - remove in production */}
+              {/* Debug buttons - remove in production */}
               <Button
                 variant="outline"
                 size="sm"
@@ -438,6 +438,15 @@ const UserDashboard = () => {
                 }}
               >
                 Debug
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={testOrderCompletion}
+                className="bg-orange-50 hover:bg-orange-100"
+              >
+                Test Update
               </Button>
             </div>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
