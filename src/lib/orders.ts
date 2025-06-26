@@ -40,19 +40,46 @@ export const ordersService = {
   async createOrder(orderData: CreateOrderData): Promise<OilOrder> {
     if (!supabase) throw new Error("Supabase not configured");
 
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error("User not authenticated");
+    }
+
+    console.log("Creating order for user:", user.id);
+    console.log("Order data:", orderData);
+
     const newOilLiters = Math.floor(orderData.used_oil_liters / 10);
+
+    const orderPayload = {
+      user_id: user.id, // Explicitly set user_id
+      used_oil_liters: orderData.used_oil_liters,
+      new_oil_liters: newOilLiters,
+      exchange_rate: 10,
+      pickup_address: orderData.pickup_address,
+      pickup_date: orderData.pickup_date || null,
+      pickup_time: orderData.pickup_time || null,
+      notes: orderData.notes || null,
+      status: "pending",
+    };
+
+    console.log("Order payload:", orderPayload);
 
     const { data, error } = await supabase
       .from("oil_orders")
-      .insert({
-        ...orderData,
-        new_oil_liters: newOilLiters,
-        exchange_rate: 10,
-      })
+      .insert(orderPayload)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Order creation error:", error);
+      throw error;
+    }
+
+    console.log("Order created successfully:", data);
     return data;
   },
 
