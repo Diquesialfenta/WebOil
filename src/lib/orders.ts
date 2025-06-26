@@ -100,60 +100,87 @@ export const ordersService = {
     return data || [];
   },
 
-  // Get user statistics (database should be configured now)
+  // Get user statistics (calculate from orders directly)
   async getUserStats(userId?: string): Promise<UserStats | null> {
     if (!supabase) throw new Error("Supabase not configured");
 
-    let query = supabase.from("user_stats").select("*");
+    try {
+      // Get current user info
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const targetUserId = userId || user?.id;
 
-    if (userId) {
-      query = query.eq("user_id", userId);
-    }
-
-    const { data, error } = await query.single();
-
-    if (error) {
-      console.error("getUserStats error:", error);
-      console.error("Error details:", {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-      });
-
-      // If no data found, return default stats
-      if (error.code === "PGRST116") {
-        console.log("No stats found, returning default stats");
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        return {
-          user_id: userId || "",
-          email: user?.email || "",
-          name: user?.user_metadata?.name || "Usuario",
-          total_used_oil_delivered: 0,
-          total_new_oil_received: 0,
-          completed_orders: 0,
-          pending_orders: 0,
-          last_delivery_date: null,
-        };
+      if (!targetUserId) {
+        throw new Error("No user ID available");
       }
 
-      // Enhance error before throwing
-      const enhancedError = new Error(
-        `getUserStats failed: ${error.message || "Unknown error"}`,
+      // Get user orders directly from oil_orders table
+      const { data: orders, error: ordersError } = await supabase
+        .from("oil_orders")
+        .select("*")
+        .eq("user_id", targetUserId);
+
+      if (ordersError) {
+        console.error("Error loading user orders:", ordersError);
+        throw ordersError;
+      }
+
+      // Calculate statistics from orders
+      const completedOrders =
+        orders?.filter((order) => order.status === "completed") || [];
+      const pendingOrders =
+        orders?.filter((order) => order.status === "pending") || [];
+
+      const totalUsedOil = completedOrders.reduce(
+        (sum, order) => sum + (order.used_oil_liters || 0),
+        0,
       );
-      enhancedError.code = error.code;
-      enhancedError.details = error.details;
-      enhancedError.hint = error.hint;
-      throw enhancedError;
+      const totalNewOil = completedOrders.reduce(
+        (sum, order) => sum + (order.new_oil_liters || 0),
+        0,
+      );
+
+      const lastDelivery = completedOrders
+        .filter((order) => order.completed_at)
+        .sort(
+          (a, b) =>
+            new Date(b.completed_at!).getTime() -
+            new Date(a.completed_at!).getTime(),
+        )[0];
+
+      const stats: UserStats = {
+        user_id: targetUserId,
+        email: user?.email || "",
+        name: user?.user_metadata?.name || "Usuario",
+        total_used_oil_delivered: totalUsedOil,
+        total_new_oil_received: totalNewOil,
+        completed_orders: completedOrders.length,
+        pending_orders: pendingOrders.length,
+        last_delivery_date: lastDelivery?.completed_at || null,
+      };
+
+      console.log("Stats calculated successfully:", stats);
+      return stats;
+    } catch (error: any) {
+      console.error("getUserStats error:", error);
+
+      // Return default stats for any error
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      return {
+        user_id: userId || user?.id || "",
+        email: user?.email || "",
+        name: user?.user_metadata?.name || "Usuario",
+        total_used_oil_delivered: 0,
+        total_new_oil_received: 0,
+        completed_orders: 0,
+        pending_orders: 0,
+        last_delivery_date: null,
+      };
     }
-
-    console.log("Stats loaded from Supabase:", data);
-    return data;
   },
-
-  // Update order status
   async updateOrderStatus(
     orderId: string,
     status: OilOrder["status"],
