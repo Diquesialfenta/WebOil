@@ -56,16 +56,28 @@ const UserDashboard = () => {
 
       setIsLoadingData(true);
       try {
+        console.log("Loading user data for:", user.id);
+
         // Load user statistics and orders
         const [stats, orders] = await Promise.all([
           ordersService.getUserStats(user.id),
           ordersService.getUserOrders(user.id),
         ]);
 
+        console.log("Loaded stats:", stats);
+        console.log("Loaded orders:", orders);
+
         setUserStats(stats);
         setUserOrders(orders);
       } catch (error) {
         console.error("Error loading user data:", error);
+        console.error("Error details:", {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+
         // Set default stats if error
         setUserStats({
           user_id: user.id,
@@ -77,6 +89,7 @@ const UserDashboard = () => {
           pending_orders: 0,
           last_delivery_date: null,
         });
+        setUserOrders([]);
       } finally {
         setIsLoadingData(false);
       }
