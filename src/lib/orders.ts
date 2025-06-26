@@ -187,10 +187,15 @@ export const ordersService = {
   ): Promise<OilOrder> {
     if (!supabase) throw new Error("Supabase not configured");
 
+    console.log(`Updating order ${orderId} to status: ${status}`);
+
     const updateData: any = { status };
 
     if (status === "completed") {
       updateData.completed_at = new Date().toISOString();
+      console.log(
+        "Order being marked as completed, setting completed_at timestamp",
+      );
     }
 
     const { data, error } = await supabase
@@ -200,7 +205,22 @@ export const ordersService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error updating order status:", error);
+      throw error;
+    }
+
+    console.log("Order status updated successfully:", data);
+
+    // If order was marked as completed, log the user impact
+    if (status === "completed" && data) {
+      console.log(`Order completed for user ${data.user_id}:`, {
+        used_oil_added: data.used_oil_liters,
+        new_oil_earned: data.new_oil_liters,
+        user_id: data.user_id,
+      });
+    }
+
     return data;
   },
 
