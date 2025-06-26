@@ -456,6 +456,26 @@ const AdminPanel = () => {
                                   </DialogDescription>
                                 </DialogHeader>
                                 <div className="grid grid-cols-2 gap-4 py-4">
+                                  <div className="col-span-2 p-4 bg-blue-50 rounded-lg">
+                                    <Label className="text-sm font-medium text-blue-900">
+                                      Customer Information
+                                    </Label>
+                                    <div className="mt-2 space-y-2">
+                                      <div className="flex items-center space-x-2">
+                                        <User className="h-4 w-4 text-blue-600" />
+                                        <span className="font-medium">
+                                          {order.user_name || "Usuario"}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Mail className="h-4 w-4 text-blue-600" />
+                                        <span className="text-sm">
+                                          {order.user_email ||
+                                            "Email no disponible"}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
                                   <div>
                                     <Label className="text-sm font-medium">
                                       Current Status
