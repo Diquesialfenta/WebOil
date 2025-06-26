@@ -184,10 +184,10 @@ const UserDashboard = () => {
           // If order was completed
           if (
             (payload.eventType === "UPDATE" &&
-             payload.new?.status === "completed" &&
-             payload.old?.status !== "completed") ||
+              payload.new?.status === "completed" &&
+              payload.old?.status !== "completed") ||
             (payload.eventType === "INSERT" &&
-             payload.new?.status === "completed")
+              payload.new?.status === "completed")
           ) {
             console.log("✅ Order completed, refreshing dashboard...");
 
@@ -428,7 +428,6 @@ const UserDashboard = () => {
                 </span>
               </div>
             </div>
-          </Link>
           </div>
         </div>
       </header>
