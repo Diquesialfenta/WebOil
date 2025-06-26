@@ -1,15 +1,29 @@
+import { useState, useEffect } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { authService } from "@/lib/auth";
-import { clearCorruptedAuthData } from "@/lib/authUtils";
+import { clearCorruptedAuthData, hasCorruptedAuthData } from "@/lib/authUtils";
 
 export function SessionRecovery() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const [isClearing, setIsClearing] = useState(false);
+  const [hasCorruptedData, setHasCorruptedData] = useState(false);
+
+  // Check for corrupted auth data on mount and when auth state changes
+  useEffect(() => {
+    if (!loading && !user) {
+      const isCorrupted = hasCorruptedAuthData();
+      setHasCorruptedData(isCorrupted);
+    } else {
+      setHasCorruptedData(false);
+    }
+  }, [user, loading]);
 
   const handleClearSession = async () => {
+    setIsClearing(true);
     try {
       // Clear all auth data
       await authService.signOut();
@@ -19,14 +33,18 @@ export function SessionRecovery() {
     }
 
     // Clear corrupted auth data from storage
-    clearCorruptedAuthData();
+    const cleared = clearCorruptedAuthData();
+    console.log("Auth data cleared:", cleared);
 
-    // Force reload to reset everything
-    window.location.href = "/auth";
+    // Wait a moment for storage to clear
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Force complete page reload to reset everything
+    window.location.reload();
   };
 
-  // Only show if there are auth issues
-  if (user) return null;
+  // Only show if there are corrupted auth data and no user
+  if (user || loading || !hasCorruptedData) return null;
 
   return (
     <Card className="max-w-md mx-auto mt-8 border-orange-200 bg-orange-50">
@@ -49,10 +67,20 @@ export function SessionRecovery() {
           <h4 className="font-semibold">Quick Fix:</h4>
           <Button
             onClick={handleClearSession}
-            className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+            disabled={isClearing}
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Clear Session & Sign In Again
+            {isClearing ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Clearing Session...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Clear Session & Sign In Again
+              </>
+            )}
           </Button>
         </div>
 
@@ -62,7 +90,7 @@ export function SessionRecovery() {
           </p>
           <ul className="list-disc list-inside mt-1 space-y-1">
             <li>Clears all stored authentication data</li>
-            <li>Redirects you to the sign-in page</li>
+            <li>Reloads the page completely</li>
             <li>Resets your session completely</li>
           </ul>
         </div>
