@@ -51,7 +51,7 @@ const AdminPanel = () => {
   // Handle auth errors and redirect if needed
   useAuthErrorHandler();
 
-  const [orders, setOrders] = useState<OilOrder[]>([]);
+  const [orders, setOrders] = useState<OilOrderWithUser[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
