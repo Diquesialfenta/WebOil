@@ -60,19 +60,34 @@ export const ordersService = {
   async getUserOrders(userId?: string): Promise<OilOrder[]> {
     if (!supabase) throw new Error("Supabase not configured");
 
-    let query = supabase
-      .from("oil_orders")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      let query = supabase
+        .from("oil_orders")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (userId) {
-      query = query.eq("user_id", userId);
+      if (userId) {
+        query = query.eq("user_id", userId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.log("getUserOrders error:", error);
+
+        // If table doesn't exist, return empty array
+        if (error.code === "42P01") {
+          console.log("oil_orders table does not exist, returning empty array");
+          return [];
+        }
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Error in getUserOrders:", error);
+      return [];
     }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-    return data || [];
   },
 
   // Get user statistics
