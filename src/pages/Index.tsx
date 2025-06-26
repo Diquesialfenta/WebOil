@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { ordersService } from "@/lib/orders";
-import { LocalStorageNotice } from "@/components/LocalStorageNotice";
 import {
   Card,
   CardContent,
