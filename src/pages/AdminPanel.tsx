@@ -308,6 +308,7 @@ const AdminPanel = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>ID</TableHead>
+                    <TableHead>Customer</TableHead>
                     <TableHead>Date/Time</TableHead>
                     <TableHead>Address</TableHead>
                     <TableHead>Oil Exchange</TableHead>
