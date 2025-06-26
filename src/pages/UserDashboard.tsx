@@ -81,9 +81,9 @@ const UserDashboard = () => {
         });
 
         // Tables should exist now, but keep fallback just in case
-        if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
-          setShowDatabaseSetup(true);
-        }
+        if (
+          error.code === "42P01" ||
+          error.message?.includes("relation") ||
           error.message?.includes("does not exist")
         ) {
           setShowDatabaseSetup(true);
