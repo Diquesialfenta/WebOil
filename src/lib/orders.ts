@@ -224,6 +224,31 @@ export const ordersService = {
         new_oil_earned: data.new_oil_liters,
         user_id: data.user_id,
       });
+
+      // Trigger real-time notification for user dashboard updates
+      try {
+        // Send a custom event that can be listened to by user dashboards
+        const notificationPayload = {
+          type: "ORDER_COMPLETED",
+          order_id: orderId,
+          user_id: data.user_id,
+          used_oil_liters: data.used_oil_liters,
+          new_oil_liters: data.new_oil_liters,
+          timestamp: new Date().toISOString(),
+        };
+
+        // Use Supabase realtime to broadcast the change
+        await supabase.channel("order_updates").send({
+          type: "broadcast",
+          event: "order_completed",
+          payload: notificationPayload,
+        });
+
+        console.log("Real-time notification sent:", notificationPayload);
+      } catch (realtimeError) {
+        console.error("Error sending real-time notification:", realtimeError);
+        // Don't fail the order update if notification fails
+      }
     }
 
     return data;
