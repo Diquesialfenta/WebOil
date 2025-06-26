@@ -45,8 +45,12 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ordersService, OilOrder } from "@/lib/orders";
+import { useAuthErrorHandler } from "@/hooks/useAuthErrorHandler";
 
 const AdminPanel = () => {
+  // Handle auth errors and redirect if needed
+  useAuthErrorHandler();
+
   const [orders, setOrders] = useState<OilOrder[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
