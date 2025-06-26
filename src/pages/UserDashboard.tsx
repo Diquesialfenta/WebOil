@@ -181,26 +181,38 @@ const UserDashboard = () => {
         async (payload) => {
           console.log("🔔 Database change detected for user orders:", payload);
 
-          // If order was completed
+          // Handle ANY status change - orders must update immediately
           if (
-            (payload.eventType === "UPDATE" &&
-              payload.new?.status === "completed" &&
-              payload.old?.status !== "completed") ||
-            (payload.eventType === "INSERT" &&
-              payload.new?.status === "completed")
+            payload.eventType === "UPDATE" &&
+            payload.new?.status !== payload.old?.status
           ) {
-            console.log("✅ Order completed, refreshing dashboard...");
-
-            const newOil = payload.new.new_oil_liters || 0;
-            setUpdateMessage(
-              `¡Tu pedido ha sido completado! Recibiste ${newOil}L de aceite nuevo.`,
+            console.log(
+              `✅ Order status changed from ${payload.old?.status} to ${payload.new?.status}, refreshing dashboard...`,
             );
+
+            let message = "";
+
+            // Different messages based on status change
+            if (payload.new?.status === "completed") {
+              const newOil = payload.new.new_oil_liters || 0;
+              message = `¡Tu pedido ha sido completado! Recibiste ${newOil}L de aceite nuevo.`;
+            } else if (payload.new?.status === "confirmed") {
+              message = `¡Tu pedido ha sido confirmado! El proceso está en marcha.`;
+            } else if (payload.new?.status === "in_progress") {
+              message = `¡Tu pedido está en proceso! Estamos trabajando en él.`;
+            } else if (payload.new?.status === "cancelled") {
+              message = `Tu pedido ha sido cancelado. Contáctanos si tienes dudas.`;
+            } else {
+              message = `Estado de tu pedido actualizado: ${payload.new?.status}`;
+            }
+
+            setUpdateMessage(message);
             setShowUpdateNotification(true);
 
-            // Refresh data
+            // ALWAYS refresh data when status changes
             await loadUserData();
           } else if (payload.eventType === "INSERT") {
-            // New order created, just refresh without notification
+            // New order created, refresh without notification
             console.log("New order created, refreshing data...");
             await loadUserData();
           }
