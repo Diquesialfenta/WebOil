@@ -32,10 +32,14 @@ import { ordersService, UserStats, OilOrder } from "@/lib/orders";
 import { DatabaseSetupInfo } from "@/components/DatabaseSetupInfo";
 import { DebugInfo } from "@/components/DebugInfo";
 import { UpdateNotification } from "@/components/UpdateNotification";
+import { useAuthErrorHandler } from "@/hooks/useAuthErrorHandler";
 
 const UserDashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+
+  // Handle auth errors and redirect if needed
+  useAuthErrorHandler();
 
   // Real user data from Supabase
   const [userStats, setUserStats] = useState<UserStats | null>(null);
