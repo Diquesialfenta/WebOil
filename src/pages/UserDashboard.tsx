@@ -54,83 +54,96 @@ const UserDashboard = () => {
   }, [user, navigate]);
 
   // Load real user data from Supabase
-  useEffect(() => {
-    const loadUserData = async () => {
-      if (!user) return;
+  const loadUserData = async () => {
+    if (!user) return;
 
-      setIsLoadingData(true);
-      try {
-        console.log("Loading user data for:", user.id);
+    setIsLoadingData(true);
+    try {
+      console.log("Loading user data for:", user.id);
 
-        // Load user statistics and orders
-        const [stats, orders] = await Promise.all([
-          ordersService.getUserStats(user.id),
-          ordersService.getUserOrders(user.id),
-        ]);
+      // Load user statistics and orders
+      const [stats, orders] = await Promise.all([
+        ordersService.getUserStats(user.id),
+        ordersService.getUserOrders(user.id),
+      ]);
 
-        console.log("Loaded stats:", stats);
-        console.log("Loaded orders:", orders);
+      console.log("Loaded stats:", stats);
+      console.log("Loaded orders:", orders);
 
-        setUserStats(stats);
-        setUserOrders(orders);
-      } catch (error: any) {
-        console.error("Error loading user data:", error);
+      setUserStats(stats);
+      setUserOrders(orders);
+      setShowDebugInfo(false); // Hide debug info on successful load
+    } catch (error: any) {
+      console.error("Error loading user data:", error);
 
-        // Better error logging
-        const errorDetails = {
-          message: error?.message || "Unknown error",
-          code: error?.code || "No code",
-          details: error?.details || "No details",
-          hint: error?.hint || "No hint",
-          stack: error?.stack || "No stack",
-        };
-        console.error("Error details:", errorDetails);
+      // Better error logging
+      const errorDetails = {
+        message: error?.message || "Unknown error",
+        code: error?.code || "No code",
+        details: error?.details || "No details",
+        hint: error?.hint || "No hint",
+        stack: error?.stack || "No stack",
+      };
+      console.error("Error details:", errorDetails);
 
-        // More specific error messages
-        let errorMessage = "Unknown error occurred";
-        if (error?.message) {
-          errorMessage = error.message;
-        } else if (typeof error === "string") {
-          errorMessage = error;
-        }
-        console.error(`Specific error: ${errorMessage}`);
-
-        // Tables should exist now, but keep fallback just in case
-        if (
-          error?.code === "42P01" ||
-          error?.message?.includes("relation") ||
-          error?.message?.includes("does not exist")
-        ) {
-          setShowDatabaseSetup(true);
-          console.error("Database tables missing - showing setup instructions");
-        }
-
-        // Check for authentication issues
-        if (error?.code === "PGRST301" || error?.message?.includes("JWT")) {
-          console.error("Authentication issue detected");
-        }
-
-        // Show debug info for persistent errors
-        setShowDebugInfo(true);
-
-        // Set default stats if error
-        setUserStats({
-          user_id: user.id,
-          email: user.email || "",
-          name: user.user_metadata?.name || "Usuario",
-          total_used_oil_delivered: 0,
-          total_new_oil_received: 0,
-          completed_orders: 0,
-          pending_orders: 0,
-          last_delivery_date: null,
-        });
-        setUserOrders([]);
-      } finally {
-        setIsLoadingData(false);
+      // More specific error messages
+      let errorMessage = "Unknown error occurred";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
       }
-    };
+      console.error(`Specific error: ${errorMessage}`);
 
+      // Tables should exist now, but keep fallback just in case
+      if (
+        error?.code === "42P01" ||
+        error?.message?.includes("relation") ||
+        error?.message?.includes("does not exist")
+      ) {
+        setShowDatabaseSetup(true);
+        console.error("Database tables missing - showing setup instructions");
+      }
+
+      // Check for authentication issues
+      if (error?.code === "PGRST301" || error?.message?.includes("JWT")) {
+        console.error("Authentication issue detected");
+      }
+
+      // Show debug info for persistent errors
+      setShowDebugInfo(true);
+
+      // Set default stats if error
+      setUserStats({
+        user_id: user.id,
+        email: user.email || "",
+        name: user.user_metadata?.name || "Usuario",
+        total_used_oil_delivered: 0,
+        total_new_oil_received: 0,
+        completed_orders: 0,
+        pending_orders: 0,
+        last_delivery_date: null,
+      });
+      setUserOrders([]);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  useEffect(() => {
     loadUserData();
+  }, [user]);
+
+  // Auto-refresh data every 30 seconds to catch updates from admin
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      console.log("Auto-refreshing user data...");
+      loadUserData();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
   }, [user]);
 
   const [isLoading, setIsLoading] = useState(false);
