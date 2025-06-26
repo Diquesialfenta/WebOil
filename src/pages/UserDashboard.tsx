@@ -97,7 +97,7 @@ const UserDashboard = () => {
 
       // Show update notification if requested (manual refresh)
       if (showNotification) {
-        setUpdateMessage("¡Dashboard actualizado con los últimos datos!");
+        setUpdateMessage("Dashboard updated with latest data!");
         setShowUpdateNotification(true);
       }
     } catch (error: any) {
@@ -195,15 +195,15 @@ const UserDashboard = () => {
             // Different messages based on status change
             if (payload.new?.status === "completed") {
               const newOil = payload.new.new_oil_liters || 0;
-              message = `¡Tu pedido ha sido completado! Recibiste ${newOil}L de aceite nuevo.`;
+              message = `Your order has been completed! You received ${newOil}L of new oil.`;
             } else if (payload.new?.status === "confirmed") {
-              message = `¡Tu pedido ha sido confirmado! El proceso está en marcha.`;
+              message = `Your order has been confirmed! The process is underway.`;
             } else if (payload.new?.status === "in_progress") {
-              message = `¡Tu pedido está en proceso! Estamos trabajando en él.`;
+              message = `Your order is in progress! We're working on it.`;
             } else if (payload.new?.status === "cancelled") {
-              message = `Tu pedido ha sido cancelado. Contáctanos si tienes dudas.`;
+              message = `Your order has been cancelled. Contact us if you have questions.`;
             } else {
-              message = `Estado de tu pedido actualizado: ${payload.new?.status}`;
+              message = `Your order status updated: ${payload.new?.status}`;
             }
 
             setUpdateMessage(message);
@@ -258,7 +258,7 @@ const UserDashboard = () => {
       await loadUserData(true); // Pass true to show notification
     } catch (error) {
       console.error("Error refreshing data:", error);
-      setUpdateMessage("Error al actualizar los datos. Inténtalo de nuevo.");
+      setUpdateMessage("Error updating data. Please try again.");
       setShowUpdateNotification(true);
     } finally {
       setIsRefreshing(false);
@@ -277,9 +277,9 @@ const UserDashboard = () => {
     }
   };
 
-  // Formatear fecha
-  const formatearFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString("es-ES", {
+  // Format date
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -330,7 +330,7 @@ const UserDashboard = () => {
                 <RefreshCw
                   className={`h-4 w-4 mr-1 ${isRefreshing ? "animate-spin" : ""}`}
                 />
-                {isRefreshing ? "Actualizando..." : "Actualizar"}
+                {isRefreshing ? "Updating..." : "Refresh"}
               </Button>
 
               {/* Real-time status indicator */}
@@ -354,10 +354,10 @@ const UserDashboard = () => {
                 ></div>
                 <span className="text-muted-foreground">
                   {realtimeStatus === "subscribed"
-                    ? "En línea"
+                    ? "Online"
                     : realtimeStatus === "connecting"
-                      ? "Conectando..."
-                      : "Desconectado"}
+                      ? "Connecting..."
+                      : "Offline"}
                 </span>
               </div>
             </div>
@@ -381,10 +381,10 @@ const UserDashboard = () => {
               </div>
               <div className="relative z-10">
                 <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                  ¡Bienvenido, {user?.user_metadata?.name || "Usuario"}!
+                  Welcome, {user?.user_metadata?.name || "User"}!
                 </h2>
                 <p className="text-white/90 mb-4">
-                  Tu centro de control para el programa de intercambio de aceite
+                  Your control center for the oil exchange program
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <div className="flex items-center space-x-2">
@@ -405,11 +405,9 @@ const UserDashboard = () => {
             <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl text-brand-700">
-                  Estadísticas de Intercambio
+                  Exchange Statistics
                 </CardTitle>
-                <CardDescription>
-                  Resumen de tus intercambios de aceite
-                </CardDescription>
+                <CardDescription>Summary of your oil exchanges</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -425,11 +423,11 @@ const UserDashboard = () => {
                       {isLoadingData ? "..." : `${litrosEntregados}L`}
                     </div>
                     <p className="text-sm font-medium text-red-700">
-                      Litros de aceite entregados
+                      Liters of used oil delivered
                     </p>
                   </div>
 
-                  {/* Litros Canjeados */}
+                  {/* New Oil Received */}
                   <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
                     <div className="bg-green-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
                       <Recycle className="h-6 w-6 text-white" />
@@ -441,11 +439,11 @@ const UserDashboard = () => {
                       {isLoadingData ? "..." : `${litrosCanjeados}L`}
                     </div>
                     <p className="text-sm font-medium text-green-700">
-                      Litros de aceite nuevo obtenidos
+                      Liters of new oil received
                     </p>
                   </div>
 
-                  {/* Última Entrega */}
+                  {/* Last Delivery */}
                   <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
                     <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
                       <Calendar className="h-6 w-6 text-white" />
@@ -457,13 +455,13 @@ const UserDashboard = () => {
                       {isLoadingData
                         ? "..."
                         : userStats?.last_delivery_date
-                          ? formatearFecha(
+                          ? formatDate(
                               userStats.last_delivery_date.split("T")[0],
                             )
-                          : "Sin entregas"}
+                          : "No deliveries"}
                     </div>
                     <p className="text-sm font-medium text-blue-700">
-                      Última entrega
+                      Last delivery
                     </p>
                   </div>
                 </div>
@@ -477,17 +475,17 @@ const UserDashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-purple-700">
                   <Gift className="h-6 w-6" />
-                  <span>Progreso hacia el próximo premio</span>
+                  <span>Progress to next reward</span>
                 </CardTitle>
                 <CardDescription>
-                  Cada 1000L entregados recibes un premio especial
+                  Every 1000L delivered you receive a special reward
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-purple-600">
-                      Progreso actual
+                      Current progress
                     </span>
                     <span className="text-sm font-bold text-purple-600">
                       {litrosEntregados}/1000L
@@ -499,9 +497,9 @@ const UserDashboard = () => {
                   />
                   <div className="text-center">
                     <p className="text-sm text-purple-600">
-                      Te faltan{" "}
+                      You need{" "}
                       <span className="font-bold">{litrosParaPremio}L</span>{" "}
-                      para tu próximo premio
+                      more for your next reward
                     </p>
                   </div>
                 </div>
@@ -517,18 +515,14 @@ const UserDashboard = () => {
                 <div className="bg-brand-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                   <Droplets className="h-8 w-8 text-brand-600" />
                 </div>
-                <CardTitle className="text-brand-700">
-                  Nuevo Intercambio
-                </CardTitle>
-                <CardDescription>
-                  Solicita la recolección de aceite usado
-                </CardDescription>
+                <CardTitle className="text-brand-700">New Exchange</CardTitle>
+                <CardDescription>Request used oil collection</CardDescription>
               </CardHeader>
               <CardContent className="text-center">
                 <Link to="/">
                   <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white">
                     <Droplets className="h-4 w-4 mr-2" />
-                    Hacer Solicitud
+                    Make Request
                   </Button>
                 </Link>
               </CardContent>
@@ -540,28 +534,22 @@ const UserDashboard = () => {
                 <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                   <Award className="h-8 w-8 text-green-600" />
                 </div>
-                <CardTitle className="text-green-700">
-                  Aceite Disponible
-                </CardTitle>
-                <CardDescription>
-                  Aceite nuevo listo para recoger
-                </CardDescription>
+                <CardTitle className="text-green-700">Available Oil</CardTitle>
+                <CardDescription>New oil ready to collect</CardDescription>
               </CardHeader>
               <CardContent className="text-center">
                 <div className="mb-4">
                   <p className="text-2xl font-bold text-green-600">
                     {Math.round(litrosEntregados * 0.95)}L
                   </p>
-                  <p className="text-sm text-green-600">
-                    disponibles para recoger
-                  </p>
+                  <p className="text-sm text-green-600">available to collect</p>
                 </div>
                 <Button
                   variant="outline"
                   className="w-full border-green-200 text-green-700 hover:bg-green-50"
                 >
                   <Phone className="h-4 w-4 mr-2" />
-                  Contactar para Recoger
+                  Contact to Collect
                 </Button>
               </CardContent>
             </Card>
@@ -572,19 +560,17 @@ const UserDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <TrendingUp className="h-6 w-6 text-brand-600" />
-                <span>Solicitudes Recientes</span>
+                <span>Recent Requests</span>
               </CardTitle>
               <CardDescription>
-                Historial de tus últimas solicitudes de intercambio
+                History of your latest exchange requests
               </CardDescription>
             </CardHeader>
             <CardContent>
               {isLoadingData ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">
-                    Cargando solicitudes...
-                  </p>
+                  <p className="text-muted-foreground">Loading requests...</p>
                 </div>
               ) : userOrders && userOrders.length > 0 ? (
                 <div className="space-y-4">
@@ -607,11 +593,11 @@ const UserDashboard = () => {
                         ></div>
                         <div>
                           <p className="font-medium">
-                            {order.used_oil_liters}L aceite usado →{" "}
-                            {order.new_oil_liters}L aceite nuevo
+                            {order.used_oil_liters}L used oil →{" "}
+                            {order.new_oil_liters}L new oil
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {order.pickup_date || "Fecha por confirmar"}
+                            {order.pickup_date || "Date to be confirmed"}
                           </p>
                         </div>
                       </div>
@@ -625,11 +611,11 @@ const UserDashboard = () => {
                         }
                       >
                         {order.status === "completed"
-                          ? "Completado"
+                          ? "Completed"
                           : order.status === "pending"
-                            ? "Pendiente"
+                            ? "Pending"
                             : order.status === "confirmed"
-                              ? "Confirmado"
+                              ? "Confirmed"
                               : order.status}
                       </Badge>
                     </div>
@@ -638,10 +624,8 @@ const UserDashboard = () => {
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Droplets className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No tienes solicitudes aún</p>
-                  <p className="text-sm">
-                    ¡Haz tu primera solicitud de intercambio!
-                  </p>
+                  <p>You don't have any requests yet</p>
+                  <p className="text-sm">Make your first exchange request!</p>
                 </div>
               )}
             </CardContent>
@@ -653,13 +637,13 @@ const UserDashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-blue-700">
                   <Phone className="h-6 w-6" />
-                  <span>Información de Contacto</span>
+                  <span>Contact Information</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="font-medium text-blue-700">Teléfono</p>
+                    <p className="font-medium text-blue-700">Phone</p>
                     <p className="text-blue-600">+356 9919 0222</p>
                   </div>
                   <div>
@@ -667,12 +651,12 @@ const UserDashboard = () => {
                     <p className="text-blue-600">malteromalta@gmail.com</p>
                   </div>
                   <div className="md:col-span-2">
-                    <p className="font-medium text-blue-700">Dirección</p>
+                    <p className="font-medium text-blue-700">Address</p>
                     <p className="text-blue-600">{defaultAddress}</p>
                   </div>
                   <div className="md:col-span-2">
                     <p className="font-medium text-blue-700">
-                      Permiso Ambiental No. 017/16/A
+                      Environmental Permit No. 017/16/A
                     </p>
                   </div>
                 </div>
@@ -689,12 +673,12 @@ const UserDashboard = () => {
               className="flex-1"
             >
               <LogOut className="h-4 w-4 mr-2" />
-              {isLoading ? "Cerrando sesión..." : "Cerrar Sesión"}
+              {isLoading ? "Signing out..." : "Sign Out"}
             </Button>
             <Link to="/" className="flex-1">
               <Button variant="outline" className="w-full">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver al Inicio
+                Back to Home
               </Button>
             </Link>
           </div>
