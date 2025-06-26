@@ -95,7 +95,14 @@ const AdminPanel = () => {
   };
 
   const getStatusBadge = (status: OilOrder["status"]) => {
-    const statusConfig = {
+    const statusConfig: Record<
+      string,
+      {
+        label: string;
+        variant: "default" | "secondary" | "destructive" | "outline";
+        icon: React.ReactNode;
+      }
+    > = {
       pending: {
         label: "Pending",
         variant: "secondary" as const,
@@ -106,7 +113,7 @@ const AdminPanel = () => {
         variant: "default" as const,
         icon: <CheckCircle className="h-3 w-3" />,
       },
-      "in-progress": {
+      in_progress: {
         label: "In Progress",
         variant: "outline" as const,
         icon: <Truck className="h-3 w-3" />,
@@ -123,7 +130,12 @@ const AdminPanel = () => {
       },
     };
 
-    const config = statusConfig[status];
+    const config = statusConfig[status] || {
+      label: status || "Unknown",
+      variant: "secondary" as const,
+      icon: <AlertCircle className="h-3 w-3" />,
+    };
+
     return (
       <Badge variant={config.variant} className="flex items-center gap-1">
         {config.icon}
