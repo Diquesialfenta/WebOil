@@ -206,6 +206,7 @@ const UserDashboard = () => {
       })
       .subscribe((status) => {
         console.log("📡 Real-time subscription status:", status);
+        setRealtimeStatus(status.toLowerCase());
         if (status === "SUBSCRIBED") {
           console.log("✅ Successfully subscribed to real-time updates");
         } else if (status === "CHANNEL_ERROR") {
