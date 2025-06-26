@@ -548,6 +548,9 @@ const UserDashboard = () => {
 
           {/* Database Setup Information */}
           <DatabaseSetupInfo show={showDatabaseSetup} />
+
+          {/* Debug Information */}
+          {showDebugInfo && <DebugInfo />}
         </div>
       </main>
     </div>
