@@ -110,6 +110,9 @@ const UserDashboard = () => {
           console.error("Authentication issue detected");
         }
 
+        // Show debug info for persistent errors
+        setShowDebugInfo(true);
+
         // Set default stats if error
         setUserStats({
           user_id: user.id,
