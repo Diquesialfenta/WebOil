@@ -283,10 +283,10 @@ const AdminPanel = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {filteredRequests.length === 0 ? (
+            {filteredOrders.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No requests to display</p>
+                <p>No orders to display</p>
               </div>
             ) : (
               <Table>
