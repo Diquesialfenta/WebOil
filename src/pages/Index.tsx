@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { ordersService } from "@/lib/orders";
+import { LocalStorageNotice } from "@/components/LocalStorageNotice";
 import {
   Card,
   CardContent,
@@ -290,6 +291,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Temporary Notice */}
+      <LocalStorageNotice />
 
       {/* How It Works - Simple & Clear */}
       <section className="py-16 bg-white/50">
