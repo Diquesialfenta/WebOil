@@ -124,12 +124,32 @@ export const authService = {
 
     if (!supabase) throw new Error("Supabase not configured");
 
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.getSession();
-    if (error) throw error;
-    return session;
+    try {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error) {
+        // Handle specific token errors
+        if (
+          error.message?.includes("Invalid Refresh Token") ||
+          error.message?.includes("Refresh Token Not Found")
+        ) {
+          console.log("Token error detected, clearing session...");
+          // Clear the session
+          await supabase.auth.signOut();
+          return null;
+        }
+        throw error;
+      }
+
+      return session;
+    } catch (error) {
+      console.error("Session error:", error);
+      // For any other session errors, return null instead of throwing
+      return null;
+    }
   },
 
   // Listen to auth changes
