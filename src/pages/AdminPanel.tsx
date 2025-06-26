@@ -42,6 +42,8 @@ import {
   Truck,
   Phone,
   ArrowLeft,
+  User,
+  Mail,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ordersService, OilOrder, OilOrderWithUser } from "@/lib/orders";
