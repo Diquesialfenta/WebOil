@@ -62,26 +62,37 @@ export interface WasteRequest {
 }
 
 const AdminPanel = () => {
-  const [requests, setRequests] = useState<WasteRequest[]>([]);
+  const [orders, setOrders] = useState<OilOrder[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load requests from localStorage
-    const savedRequests = localStorage.getItem("wasteRequests");
-    if (savedRequests) {
-      setRequests(JSON.parse(savedRequests));
-    }
+    loadOrders();
   }, []);
 
-  const updateRequestStatus = (
+  const loadOrders = async () => {
+    try {
+      setIsLoading(true);
+      const allOrders = await ordersService.getAllOrders();
+      setOrders(allOrders);
+    } catch (error) {
+      console.error("Error loading orders:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateOrderStatus = async (
     id: string,
-    newStatus: WasteRequest["status"],
+    newStatus: OilOrder["status"],
   ) => {
-    const updatedRequests = requests.map((req) =>
-      req.id === id ? { ...req, status: newStatus } : req,
-    );
-    setRequests(updatedRequests);
-    localStorage.setItem("wasteRequests", JSON.stringify(updatedRequests));
+    try {
+      await ordersService.updateOrderStatus(id, newStatus);
+      await loadOrders(); // Reload orders after update
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      alert("Error updating order status");
+    }
   };
 
   const getStatusBadge = (status: WasteRequest["status"]) => {
