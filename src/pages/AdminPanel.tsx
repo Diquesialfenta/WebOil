@@ -44,7 +44,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ordersService, OilOrder } from "@/lib/orders";
+import { ordersService, OilOrder, OilOrderWithUser } from "@/lib/orders";
 import { useAuthErrorHandler } from "@/hooks/useAuthErrorHandler";
 
 const AdminPanel = () => {
