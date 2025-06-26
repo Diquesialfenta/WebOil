@@ -113,25 +113,37 @@ export const ordersService = {
     const { data, error } = await query.single();
 
     if (error) {
-      console.log("getUserStats error:", error);
+      console.error('getUserStats error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
 
       // If no data found, return default stats
-      if (error.code === "PGRST116") {
-        console.log("No stats found, returning default stats");
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+      if (error.code === 'PGRST116') {
+        console.log('No stats found, returning default stats');
+        const { data: { user } } = await supabase.auth.getUser()
         return {
-          user_id: userId || "",
-          email: user?.email || "",
-          name: user?.user_metadata?.name || "Usuario",
+          user_id: userId || '',
+          email: user?.email || '',
+          name: user?.user_metadata?.name || 'Usuario',
           total_used_oil_delivered: 0,
           total_new_oil_received: 0,
           completed_orders: 0,
           pending_orders: 0,
-          last_delivery_date: null,
-        };
+          last_delivery_date: null
+        }
       }
+
+      // Enhance error before throwing
+      const enhancedError = new Error(`getUserStats failed: ${error.message || 'Unknown error'}`);
+      enhancedError.code = error.code;
+      enhancedError.details = error.details;
+      enhancedError.hint = error.hint;
+      throw enhancedError;
+    }
       throw error;
     }
 
@@ -170,18 +182,18 @@ export const ordersService = {
     try {
       const { data, error } = await supabase
         .from("oil_orders")
-        .select("*")
+        .select('*')
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("getAllOrders error:", error);
+        console.error('getAllOrders error:', error);
         throw error;
       }
 
-      console.log("getAllOrders data:", data);
+      console.log('getAllOrders data:', data);
       return data || [];
     } catch (error) {
-      console.error("Error in getAllOrders:", error);
+      console.error('Error in getAllOrders:', error);
       throw error;
     }
   },
