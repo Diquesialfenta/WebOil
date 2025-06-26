@@ -59,6 +59,7 @@ const AdminPanel = () => {
   const loadOrders = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       console.log("Loading orders from Supabase...");
       const allOrders = await ordersService.getAllOrders();
       console.log("Orders loaded successfully:", allOrders);
@@ -72,7 +73,8 @@ const AdminPanel = () => {
         hint: error.hint,
       });
 
-      // Set empty array as fallback
+      const errorMessage = error.message || "Unknown error occurred";
+      setError(`Error loading orders: ${errorMessage}`);
       setOrders([]);
     } finally {
       setIsLoading(false);
