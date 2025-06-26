@@ -521,6 +521,9 @@ const UserDashboard = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Database Setup Information */}
+          <DatabaseSetupInfo show={showDatabaseSetup} />
         </div>
       </main>
     </div>
