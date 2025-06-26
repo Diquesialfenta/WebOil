@@ -96,7 +96,7 @@ const UserDashboard = () => {
       setShowDebugInfo(false); // Hide debug info on successful load
 
       // Show update notification if requested (manual refresh)
-      if (showNotification || isRefreshing) {
+      if (showNotification) {
         setUpdateMessage("¡Dashboard actualizado con los últimos datos!");
         setShowUpdateNotification(true);
       }
@@ -184,10 +184,10 @@ const UserDashboard = () => {
           // If order was completed
           if (
             (payload.eventType === "UPDATE" &&
-             payload.new?.status === "completed" &&
-             payload.old?.status !== "completed") ||
+              payload.new?.status === "completed" &&
+              payload.old?.status !== "completed") ||
             (payload.eventType === "INSERT" &&
-             payload.new?.status === "completed")
+              payload.new?.status === "completed")
           ) {
             console.log("✅ Order completed, refreshing dashboard...");
 
@@ -237,22 +237,9 @@ const UserDashboard = () => {
     return () => clearInterval(interval);
   }, [user]);
 
-  // Auto-refresh data every 30 seconds to catch updates from admin
-  useEffect(() => {
-    if (!user) return;
-
-    const interval = setInterval(() => {
-      console.log("Auto-refreshing user data...");
-      loadUserData();
-    }, 30000); // Refresh every 30 seconds
-
-    return () => clearInterval(interval);
-  }, [user]);
-
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Manual refresh function
   const handleRefreshData = async () => {
     setIsRefreshing(true);
     try {
@@ -266,62 +253,13 @@ const UserDashboard = () => {
     }
   };
 
-
-    loadUserData();
-  };
-
-  // Handle logout
   const handleSignOut = async () => {
+    setIsLoading(true);
     try {
       await signOut();
       navigate("/");
     } catch (error) {
       console.error("Error signing out:", error);
-    }
-  };
-
-  // Calculate progress towards next reward (every 1000L) using real data
-  const litrosEntregados = userStats?.total_used_oil_delivered || 0;
-  const litrosCanjeados = userStats?.total_new_oil_received || 0;
-  const progresoHaciaPremio = (litrosEntregados % 1000) / 10; // Convert to percentage
-  const litrosParaPremio = 1000 - (litrosEntregados % 1000);
-  const availableNewOil = Math.floor(litrosEntregados / 10) - litrosCanjeados;
-
-  // Create real oil request order
-  const handleSolicitarAceite = async () => {
-    if (!user || !userStats) return;
-
-    setIsLoading(true);
-    try {
-      // Calculate available new oil based on delivered oil
-      const availableNewOil =
-        Math.floor(userStats.total_used_oil_delivered / 10) -
-        userStats.total_new_oil_received;
-
-      if (availableNewOil <= 0) {
-        alert(
-          "No tienes aceite nuevo disponible para solicitar. Entrega más aceite usado primero.",
-        );
-        return;
-      }
-
-      // Create delivery request
-      await ordersService.createOrder({
-        used_oil_liters: 0, // This is a delivery request, not pickup
-        pickup_address: defaultAddress,
-        pickup_date: new Date().toISOString().split("T")[0],
-        notes: `Solicitud de entrega de ${availableNewOil}L de aceite nuevo`,
-      });
-
-      alert(
-        `¡Solicitud enviada! Te contactaremos pronto para coordinar la entrega de ${availableNewOil}L de aceite nuevo.`,
-      );
-
-      // Reload data
-      await loadUserData();
-    } catch (error) {
-      console.error("Error creating order:", error);
-      alert("Error al enviar solicitud. Intenta nuevamente.");
     } finally {
       setIsLoading(false);
     }
@@ -335,6 +273,13 @@ const UserDashboard = () => {
       day: "numeric",
     });
   };
+
+  // Calculate progress towards next reward (every 1000L) using real data
+  const litrosEntregados = userStats?.total_used_oil_delivered || 0;
+  const litrosCanjeados = userStats?.total_new_oil_received || 0;
+  const progresoHaciaPremio = (litrosEntregados % 1000) / 10; // Convert to percentage
+  const litrosParaPremio = 1000 - (litrosEntregados % 1000);
+  const availableNewOil = Math.floor(litrosEntregados / 10) - litrosCanjeados;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-brand-50/30 to-trust-50/20">
@@ -419,308 +364,349 @@ const UserDashboard = () => {
                 <img
                   src="https://cdn.builder.io/api/v1/assets/966f3cfa0fff4eb68fda2d512d8d0925/maltero-logo-white-background-a132fd?format=webp&width=800"
                   alt="Maltero Background"
-                  className="w-24 h-24 object-contain animate-float flex md:flex sm:flex"
+                  className="w-20 h-20 object-contain"
                 />
               </div>
-              <div className="flex items-center justify-between relative z-10">
-                <div>
-                  <h1
-                    id="saludoUsuario"
-                    className="text-2xl md:text-3xl font-bold mb-2"
-                  >
-                    Hola,{" "}
-                    <span id="nombreUsuario">
-                      {userStats?.name ||
-                        user?.user_metadata?.name ||
-                        "Usuario"}
-                    </span>
-                    ! 👋
-                  </h1>
-                  <p className="text-white/90 text-lg">
-                    Bienvenido a tu panel de intercambio de aceite
-                  </p>
+              <div className="relative z-10">
+                <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                  ¡Bienvenido, {user?.user_metadata?.name || "Usuario"}!
+                </h2>
+                <p className="text-white/90 mb-4">
+                  Tu centro de control para el programa de intercambio de aceite
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Mail className="h-4 w-4" />
+                    <span className="text-sm">{user?.email}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-4 w-4" />
+                    <span className="text-sm">Malta</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Dashboard Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Datos Personales */}
-            <div className="lg:col-span-1">
-              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm h-fit">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <User className="h-5 w-5 mr-2 text-trust-600" />
-                    Datos Personales
-                  </CardTitle>
-                  <CardDescription>Tu información de perfil</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <User className="h-5 w-5 text-gray-500 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600">
-                          Nombre completo
-                        </p>
-                        <p
-                          id="nombreCompleto"
-                          className="text-base font-semibold text-foreground"
-                        >
-                          {userStats?.name ||
-                            user?.user_metadata?.name ||
-                            "Usuario"}
-                        </p>
-                      </div>
+          {/* Statistics Overview */}
+          <div className="mb-8">
+            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl text-brand-700">
+                  Estadísticas de Intercambio
+                </CardTitle>
+                <CardDescription>
+                  Resumen de tus intercambios de aceite
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Litros Entregados */}
+                  <div className="text-center p-4 bg-red-50 rounded-xl border border-red-100">
+                    <div className="bg-red-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                      <Droplets className="h-6 w-6 text-white" />
                     </div>
-
-                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <Mail className="h-5 w-5 text-gray-500 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600">
-                          Correo electrónico
-                        </p>
-                        <p
-                          id="emailUsuario"
-                          className="text-base font-semibold text-foreground"
-                        >
-                          {userStats?.email || user?.email || "No especificado"}
-                        </p>
-                      </div>
+                    <div
+                      className="text-3xl font-bold text-red-600"
+                      id="litrosEntregados"
+                    >
+                      {isLoadingData ? "..." : `${litrosEntregados}L`}
                     </div>
-
-                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600">
-                          Dirección
-                        </p>
-                        <p
-                          id="direccionUsuario"
-                          className="text-base font-semibold text-foreground"
-                        >
-                          {defaultAddress}
-                        </p>
-                      </div>
-                    </div>
+                    <p className="text-sm font-medium text-red-700">
+                      Litros de aceite entregados
+                    </p>
                   </div>
 
-                  <Button variant="outline" className="w-full mt-4">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar Información
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Actividad y Estadísticas */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Estadísticas Principales */}
-              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <TrendingUp className="h-5 w-5 mr-2 text-brand-600" />
-                    Tu Actividad de Intercambio
-                  </CardTitle>
-                  <CardDescription>
-                    Resumen de tus intercambios de aceite
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Litros Entregados */}
-                    <div className="text-center p-4 bg-red-50 rounded-xl border border-red-100">
-                      <div className="bg-red-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                        <Droplets className="h-6 w-6 text-white" />
-                      </div>
-                      <div
-                        className="text-3xl font-bold text-red-600"
-                        id="litrosEntregados"
-                      >
-                        {isLoadingData ? "..." : `${litrosEntregados}L`}
-                      </div>
-                      <p className="text-sm font-medium text-red-700">
-                        Litros de aceite entregados
-                      </p>
+                  {/* Litros Canjeados */}
+                  <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
+                    <div className="bg-green-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                      <Recycle className="h-6 w-6 text-white" />
                     </div>
-
-                    {/* Litros Canjeados */}
-                    <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
-                      <div className="bg-green-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                        <Recycle className="h-6 w-6 text-white" />
-                      </div>
-                      <div
-                        className="text-3xl font-bold text-green-600"
-                        id="litrosCanjeados"
-                      >
-                        {isLoadingData ? "..." : `${litrosCanjeados}L`}
-                      </div>
-                      <p className="text-sm font-medium text-green-700">
-                        Litros de aceite nuevo obtenidos
-                      </p>
+                    <div
+                      className="text-3xl font-bold text-green-600"
+                      id="litrosCanjeados"
+                    >
+                      {isLoadingData ? "..." : `${litrosCanjeados}L`}
                     </div>
-
-                    {/* Última Entrega */}
-                    <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
-                      <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                        <Calendar className="h-6 w-6 text-white" />
-                      </div>
-                      <div
-                        className="text-lg font-bold text-blue-600"
-                        id="ultimaEntrega"
-                      >
-                        {isLoadingData
-                          ? "..."
-                          : userStats?.last_delivery_date
-                            ? formatearFecha(
-                                userStats.last_delivery_date.split("T")[0],
-                              )
-                            : "Sin entregas"}
-                      </div>
-                      <p className="text-sm font-medium text-blue-700">
-                        Última entrega
-                      </p>
-                    </div>
+                    <p className="text-sm font-medium text-green-700">
+                      Litros de aceite nuevo obtenidos
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
 
-              {/* Programa de Fidelidad */}
-              <Card className="shadow-xl border-0 bg-gradient-to-r from-purple-50 to-pink-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Award className="h-5 w-5 mr-2 text-purple-600" />
-                    Programa de Fidelidad
-                  </CardTitle>
-                  <CardDescription>
-                    Progreso hacia tu próximo premio especial
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                  {/* Última Entrega */}
+                  <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                      <Calendar className="h-6 w-6 text-white" />
+                    </div>
+                    <div
+                      className="text-lg font-bold text-blue-600"
+                      id="ultimaEntrega"
+                    >
+                      {isLoadingData
+                        ? "..."
+                        : userStats?.last_delivery_date
+                          ? formatearFecha(
+                              userStats.last_delivery_date.split("T")[0],
+                            )
+                          : "Sin entregas"}
+                    </div>
+                    <p className="text-sm font-medium text-blue-700">
+                      Última entrega
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Progress towards Reward */}
+          <div className="mb-8">
+            <Card className="shadow-xl border-0 bg-gradient-to-r from-purple-50 to-pink-50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-purple-700">
+                  <Gift className="h-6 w-6" />
+                  <span>Progreso hacia el próximo premio</span>
+                </CardTitle>
+                <CardDescription>
+                  Cada 1000L entregados recibes un premio especial
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">
-                      Progreso hacia 1000L
+                    <span className="text-sm font-medium text-purple-600">
+                      Progreso actual
                     </span>
                     <span className="text-sm font-bold text-purple-600">
                       {litrosEntregados}/1000L
                     </span>
                   </div>
-
-                  <Progress value={progresoHaciaPremio} className="h-3" />
-
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">
-                      Faltan {litrosParaPremio}L para tu próximo premio
-                    </span>
-                    <Badge
-                      variant="secondary"
-                      className="bg-purple-100 text-purple-700"
-                    >
-                      <Gift className="h-3 w-3 mr-1" />
-                      Premio: Sorpresa especial
-                    </Badge>
+                  <Progress
+                    value={progresoHaciaPremio}
+                    className="h-3 bg-white/50"
+                  />
+                  <div className="text-center">
+                    <p className="text-sm text-purple-600">
+                      Te faltan{" "}
+                      <span className="font-bold">{litrosParaPremio}L</span>{" "}
+                      para tu próximo premio
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Botón de Solicitud */}
-              {availableNewOil > 0 && (
-                <Card className="shadow-xl border-0 bg-gradient-to-r from-brand-100 to-brand-50">
-                  <CardContent className="pt-6">
-                    <div className="text-center space-y-4">
-                      <div className="bg-brand-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
-                        <Droplets className="h-8 w-8 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-foreground mb-2">
-                          ¿Tienes aceite nuevo disponible?
-                        </h3>
-                        <p className="text-muted-foreground mb-4">
-                          Solicita la entrega de tu aceite nuevo basado en tus
-                          intercambios anteriores
-                        </p>
-                      </div>
-
-                      <Button
-                        id="botonCanje"
-                        onClick={handleSolicitarAceite}
-                        disabled={isLoading}
-                        className="bg-brand-600 hover:bg-brand-700 text-white px-8 py-3 text-lg h-14"
-                      >
-                        {isLoading ? (
-                          <div className="flex items-center">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                            Enviando solicitud...
-                          </div>
-                        ) : (
-                          <>
-                            <Gift className="h-5 w-5 mr-2" />
-                            Solicitar aceite nuevo
-                          </>
-                        )}
-                      </Button>
-
-                      <p className="text-xs text-muted-foreground">
-                        * Basado en tu ratio de intercambio actual:{" "}
-                        {availableNewOil}L disponibles
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-
-          {/* Información Adicional */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border-0 bg-white/80 shadow-lg">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <div className="bg-trust-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">
-                    <Recycle className="h-6 w-6 text-trust-600" />
-                  </div>
-                  <h3 className="font-semibold mb-2">Ratio de Intercambio</h3>
-                  <p className="text-2xl font-bold text-trust-600">10:1</p>
-                  <p className="text-sm text-muted-foreground">
-                    10L aceite usado = 1L aceite nuevo
-                  </p>
                 </div>
               </CardContent>
             </Card>
+          </div>
 
-            <Card className="border-0 bg-white/80 shadow-lg">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <div className="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">
-                    <Award className="h-6 w-6 text-green-600" />
-                  </div>
-                  <h3 className="font-semibold mb-2">Impacto Ambiental</h3>
+          {/* Available Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Make New Request */}
+            <Card className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+              <CardHeader className="text-center">
+                <div className="bg-brand-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                  <Droplets className="h-8 w-8 text-brand-600" />
+                </div>
+                <CardTitle className="text-brand-700">
+                  Nuevo Intercambio
+                </CardTitle>
+                <CardDescription>
+                  Solicita la recolección de aceite usado
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Link to="/">
+                  <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white">
+                    <Droplets className="h-4 w-4 mr-2" />
+                    Hacer Solicitud
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Available Oil */}
+            <Card className="shadow-xl border-0 bg-gradient-to-br from-green-50 to-emerald-50">
+              <CardHeader className="text-center">
+                <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                  <Award className="h-8 w-8 text-green-600" />
+                </div>
+                <CardTitle className="text-green-700">
+                  Aceite Disponible
+                </CardTitle>
+                <CardDescription>
+                  Aceite nuevo listo para recoger
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="mb-4">
                   <p className="text-2xl font-bold text-green-600">
                     {Math.round(litrosEntregados * 0.95)}L
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    Aceite reciclado correctamente
+                  <p className="text-sm text-green-600">
+                    disponibles para recoger
                   </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full border-green-200 text-green-700 hover:bg-green-50"
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  Contactar para Recoger
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Orders */}
+          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <TrendingUp className="h-6 w-6 text-brand-600" />
+                <span>Solicitudes Recientes</span>
+              </CardTitle>
+              <CardDescription>
+                Historial de tus últimas solicitudes de intercambio
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingData ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">
+                    Cargando solicitudes...
+                  </p>
+                </div>
+              ) : userOrders && userOrders.length > 0 ? (
+                <div className="space-y-4">
+                  {userOrders.slice(0, 5).map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div
+                          className={`w-3 h-3 rounded-full ${
+                            order.status === "completed"
+                              ? "bg-green-500"
+                              : order.status === "pending"
+                                ? "bg-yellow-500"
+                                : order.status === "confirmed"
+                                  ? "bg-blue-500"
+                                  : "bg-gray-400"
+                          }`}
+                        ></div>
+                        <div>
+                          <p className="font-medium">
+                            {order.used_oil_liters}L aceite usado →{" "}
+                            {order.new_oil_liters}L aceite nuevo
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {order.pickup_date || "Fecha por confirmar"}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge
+                        variant={
+                          order.status === "completed"
+                            ? "default"
+                            : order.status === "pending"
+                              ? "secondary"
+                              : "outline"
+                        }
+                      >
+                        {order.status === "completed"
+                          ? "Completado"
+                          : order.status === "pending"
+                            ? "Pendiente"
+                            : order.status === "confirmed"
+                              ? "Confirmado"
+                              : order.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Droplets className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No tienes solicitudes aún</p>
+                  <p className="text-sm">
+                    ¡Haz tu primera solicitud de intercambio!
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Contact Information */}
+          <div className="mt-8">
+            <Card className="shadow-xl border-0 bg-gradient-to-r from-blue-50 to-cyan-50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-blue-700">
+                  <Phone className="h-6 w-6" />
+                  <span>Información de Contacto</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-medium text-blue-700">Teléfono</p>
+                    <p className="text-blue-600">+356 9919 0222</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-blue-700">Email</p>
+                    <p className="text-blue-600">malteromalta@gmail.com</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="font-medium text-blue-700">Dirección</p>
+                    <p className="text-blue-600">{defaultAddress}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="font-medium text-blue-700">
+                      Permiso Ambiental No. 017/16/A
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Database Setup Information */}
-          <DatabaseSetupInfo show={showDatabaseSetup} />
-
-          {/* Debug Information */}
-          {showDebugInfo && <DebugInfo />}
+          {/* Account Actions */}
+          <div className="mt-8 flex flex-col sm:flex-row gap-4">
+            <Button
+              variant="outline"
+              onClick={handleSignOut}
+              disabled={isLoading}
+              className="flex-1"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              {isLoading ? "Cerrando sesión..." : "Cerrar Sesión"}
+            </Button>
+            <Link to="/" className="flex-1">
+              <Button variant="outline" className="w-full">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Volver al Inicio
+              </Button>
+            </Link>
+          </div>
         </div>
       </main>
 
-      {/* Update Notification */}
-      <UpdateNotification
-        show={showUpdateNotification}
-        message={updateMessage}
-        onClose={() => setShowUpdateNotification(false)}
-      />
+      {/* Conditional Components */}
+      {showUpdateNotification && (
+        <UpdateNotification
+          message={updateMessage}
+          onClose={() => setShowUpdateNotification(false)}
+        />
+      )}
+
+      {showDatabaseSetup && <DatabaseSetupInfo />}
+
+      {showDebugInfo && (
+        <DebugInfo
+          userStats={userStats}
+          userOrders={userOrders}
+          user={user}
+          onClose={() => setShowDebugInfo(false)}
+        />
+      )}
     </div>
   );
 };
