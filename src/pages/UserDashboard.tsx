@@ -71,22 +71,41 @@ const UserDashboard = () => {
 
         setUserStats(stats);
         setUserOrders(orders);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error loading user data:", error);
-        console.error("Error details:", {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        });
+
+        // Better error logging
+        const errorDetails = {
+          message: error?.message || "Unknown error",
+          code: error?.code || "No code",
+          details: error?.details || "No details",
+          hint: error?.hint || "No hint",
+          stack: error?.stack || "No stack",
+        };
+        console.error("Error details:", errorDetails);
+
+        // More specific error messages
+        let errorMessage = "Unknown error occurred";
+        if (error?.message) {
+          errorMessage = error.message;
+        } else if (typeof error === "string") {
+          errorMessage = error;
+        }
+        console.error(`Specific error: ${errorMessage}`);
 
         // Tables should exist now, but keep fallback just in case
         if (
-          error.code === "42P01" ||
-          error.message?.includes("relation") ||
-          error.message?.includes("does not exist")
+          error?.code === "42P01" ||
+          error?.message?.includes("relation") ||
+          error?.message?.includes("does not exist")
         ) {
           setShowDatabaseSetup(true);
+          console.error("Database tables missing - showing setup instructions");
+        }
+
+        // Check for authentication issues
+        if (error?.code === "PGRST301" || error?.message?.includes("JWT")) {
+          console.error("Authentication issue detected");
         }
 
         // Set default stats if error
