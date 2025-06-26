@@ -92,21 +92,30 @@ const AdminPanel = () => {
     newStatus: OilOrder["status"],
   ) => {
     try {
-      console.log(`Admin updating order ${id} to status: ${newStatus}`);
+      console.log(`🔄 Admin updating order ${id} to status: ${newStatus}`);
+
       await ordersService.updateOrderStatus(id, newStatus);
 
       // Reload orders after update
       await loadOrders();
 
-      // Show success message
+      // Show success message based on status
       if (newStatus === "completed") {
         console.log(
-          "Order marked as completed - user dashboard should update automatically via real-time",
+          "✅ Order marked as completed - user dashboard will update automatically",
         );
+        // Optional: Show admin feedback
+        alert(
+          "Pedido marcado como completado. El usuario será notificado automáticamente.",
+        );
+      } else {
+        console.log(`✅ Order status updated to: ${newStatus}`);
       }
     } catch (error) {
-      console.error("Error updating order status:", error);
-      alert(`Error updating order status: ${error.message || "Unknown error"}`);
+      console.error("❌ Error updating order status:", error);
+      alert(
+        `Error al actualizar el estado del pedido: ${error.message || "Error desconocido"}`,
+      );
     }
   };
 
