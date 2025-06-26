@@ -184,10 +184,10 @@ const UserDashboard = () => {
           // If order was completed
           if (
             (payload.eventType === "UPDATE" &&
-              payload.new?.status === "completed" &&
-              payload.old?.status !== "completed") ||
+             payload.new?.status === "completed" &&
+             payload.old?.status !== "completed") ||
             (payload.eventType === "INSERT" &&
-              payload.new?.status === "completed")
+             payload.new?.status === "completed")
           ) {
             console.log("✅ Order completed, refreshing dashboard...");
 
@@ -387,7 +387,7 @@ const UserDashboard = () => {
               <Phone className="h-3 w-3 mr-1" />
               +356 9919 0222
             </Badge>
-            <div className="flex space-x-2">
+            <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -397,36 +397,19 @@ const UserDashboard = () => {
                 <RefreshCw
                   className={`h-4 w-4 mr-1 ${isRefreshing ? "animate-spin" : ""}`}
                 />
-                {isRefreshing ? "Updating..." : "Refresh"}
-              </Button>
-
-              {/* Debug buttons - remove in production */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  console.log("🔍 Current userStats:", userStats);
-                  console.log("🔍 Current userOrders:", userOrders);
-                  console.log("🔍 User ID:", user?.id);
-                  alert(
-                    `Stats: ${userStats?.total_used_oil_delivered || 0}L entregados, ${userStats?.total_new_oil_received || 0}L recibidos. Ver consola para más detalles.`,
-                  );
-                }}
-              >
-                Debug
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={testOrderCompletion}
-                className="bg-orange-50 hover:bg-orange-100"
-              >
-                Test Update
+                {isRefreshing ? "Actualizando..." : "Actualizar"}
               </Button>
 
               {/* Real-time status indicator */}
-              <div className="flex items-center space-x-1 text-xs">
+              <div
+                className={`flex items-center space-x-1 text-xs ${
+                  realtimeStatus === "subscribed"
+                    ? "text-green-600"
+                    : realtimeStatus === "connecting"
+                      ? "text-yellow-600"
+                      : "text-red-600"
+                }`}
+              >
                 <div
                   className={`w-2 h-2 rounded-full ${
                     realtimeStatus === "subscribed"
@@ -438,21 +421,13 @@ const UserDashboard = () => {
                 ></div>
                 <span className="text-muted-foreground">
                   {realtimeStatus === "subscribed"
-                    ? "Conectado"
+                    ? "En línea"
                     : realtimeStatus === "connecting"
                       ? "Conectando..."
                       : "Desconectado"}
                 </span>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-1" />
-              Sign Out
-            </Button>
-            <Link to="/">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Home
               </Button>
             </Link>
           </div>
