@@ -40,6 +40,7 @@ const UserDashboard = () => {
   const [userOrders, setUserOrders] = useState<OilOrder[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [showDatabaseSetup, setShowDatabaseSetup] = useState(false);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
 
   // Static address for now - can be made dynamic later
   const defaultAddress =
