@@ -80,6 +80,15 @@ const UserDashboard = () => {
           hint: error.hint,
         });
 
+        // Check if this is a table missing error
+        if (
+          error.code === "42P01" ||
+          error.message?.includes("relation") ||
+          error.message?.includes("does not exist")
+        ) {
+          setShowDatabaseSetup(true);
+        }
+
         // Set default stats if error
         setUserStats({
           user_id: user.id,
