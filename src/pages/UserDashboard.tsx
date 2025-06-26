@@ -590,6 +590,13 @@ const UserDashboard = () => {
           {showDebugInfo && <DebugInfo />}
         </div>
       </main>
+
+      {/* Update Notification */}
+      <UpdateNotification
+        show={showUpdateNotification}
+        message={updateMessage}
+        onClose={() => setShowUpdateNotification(false)}
+      />
     </div>
   );
 };
