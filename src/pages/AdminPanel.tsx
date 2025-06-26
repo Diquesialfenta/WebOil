@@ -306,6 +306,23 @@ const AdminPanel = () => {
                         Loading orders...
                       </TableCell>
                     </TableRow>
+                  ) : error ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-4">
+                        <div className="text-red-600">
+                          <AlertCircle className="h-5 w-5 mx-auto mb-2" />
+                          <p>{error}</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={loadOrders}
+                            className="mt-2"
+                          >
+                            Retry
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   ) : filteredOrders.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-4">
