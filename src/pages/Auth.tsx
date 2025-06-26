@@ -26,6 +26,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { SupabaseSetupInfo } from "@/components/SupabaseSetupInfo";
+import { SessionRecovery } from "@/components/SessionRecovery";
 
 const Auth = () => {
   const { user, signUp, signIn, signOut } = useAuth();
@@ -612,6 +613,9 @@ const Auth = () => {
               </TabsContent>
             </Tabs>
           </div>
+
+          {/* Session Recovery */}
+          <SessionRecovery />
 
           {/* Supabase Setup Info */}
           <SupabaseSetupInfo />
