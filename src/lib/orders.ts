@@ -230,11 +230,38 @@ export const ordersService = {
   },
 
   // Get all orders (admin only)
-  async getAllOrders(): Promise<OilOrder[]> {
+  async getAllOrders(): Promise<OilOrderWithUser[]> {
     if (!supabase) throw new Error("Supabase not configured");
 
     try {
-      const { data, error } = await supabase
+      // First try to get orders with user profile information via JOIN
+      const { data: ordersWithProfiles, error: joinError } = await supabase
+        .from("oil_orders")
+        .select(
+          `
+          *,
+          profiles!inner(email, name)
+        `,
+        )
+        .order("created_at", { ascending: false });
+
+      // If the JOIN works (profiles table exists and has data)
+      if (!joinError && ordersWithProfiles) {
+        const ordersWithUserInfo = ordersWithProfiles.map((order) => ({
+          ...order,
+          user_email: order.profiles?.email || "",
+          user_name: order.profiles?.name || "Usuario",
+          profiles: undefined, // Remove the nested profiles object
+        }));
+        console.log("getAllOrders with user info:", ordersWithUserInfo);
+        return ordersWithUserInfo;
+      }
+
+      // Fallback: get orders and manually fetch user info from auth
+      console.log(
+        "Profiles table not available, fetching user info manually...",
+      );
+      const { data: orders, error } = await supabase
         .from("oil_orders")
         .select("*")
         .order("created_at", { ascending: false });
@@ -244,11 +271,48 @@ export const ordersService = {
         throw error;
       }
 
-      console.log("getAllOrders data:", data);
-      return data || [];
+      // For each order, try to get user info from auth.users (if accessible)
+      const ordersWithUserInfo = await Promise.all(
+        (orders || []).map(async (order) => {
+          try {
+            // Try to get user metadata from auth
+            const { data: userData, error: userError } =
+              await supabase.auth.admin.getUserById(order.user_id);
+
+            return {
+              ...order,
+              user_email: userData?.user?.email || "Email no disponible",
+              user_name: userData?.user?.user_metadata?.name || "Usuario",
+            };
+          } catch (userError) {
+            // If can't access user data, use defaults
+            return {
+              ...order,
+              user_email: "Email no disponible",
+              user_name: "Usuario",
+            };
+          }
+        }),
+      );
+
+      console.log("getAllOrders with manual user info:", ordersWithUserInfo);
+      return ordersWithUserInfo;
     } catch (error) {
       console.error("Error in getAllOrders:", error);
-      throw error;
+
+      // Final fallback: return orders without user info
+      const { data, error: fallbackError } = await supabase
+        .from("oil_orders")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (fallbackError) throw fallbackError;
+
+      return (data || []).map((order) => ({
+        ...order,
+        user_email: "Email no disponible",
+        user_name: "Usuario",
+      }));
     }
   },
 
