@@ -58,10 +58,21 @@ const AdminPanel = () => {
   const loadOrders = async () => {
     try {
       setIsLoading(true);
+      console.log("Loading orders from Supabase...");
       const allOrders = await ordersService.getAllOrders();
+      console.log("Orders loaded successfully:", allOrders);
       setOrders(allOrders);
     } catch (error) {
       console.error("Error loading orders:", error);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
+
+      // Set empty array as fallback
+      setOrders([]);
     } finally {
       setIsLoading(false);
     }
