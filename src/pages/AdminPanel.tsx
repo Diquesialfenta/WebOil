@@ -353,6 +353,22 @@ const AdminPanel = () => {
                           #{order.id.slice(-8)}
                         </TableCell>
                         <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium text-sm">
+                                {order.user_name || "Usuario"}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Mail className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">
+                                {order.user_email || "Email no disponible"}
+                              </span>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center space-x-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
                             <div>
