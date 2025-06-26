@@ -46,21 +46,6 @@ import {
 import { Link } from "react-router-dom";
 import { ordersService, OilOrder } from "@/lib/orders";
 
-export interface WasteRequest {
-  id: string;
-  date: string;
-  time: string;
-  wasteType: string;
-  address: string;
-  notes: string;
-  usedOilLiters?: number;
-  newOilLiters?: number;
-  status: "pending" | "confirmed" | "in-progress" | "completed" | "cancelled";
-  createdAt: Date;
-  customerPhone?: string;
-  estimatedWeight?: string;
-}
-
 const AdminPanel = () => {
   const [orders, setOrders] = useState<OilOrder[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
