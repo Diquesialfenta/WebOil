@@ -36,96 +36,44 @@ export interface UserStats {
 }
 
 export const ordersService = {
-  // Create new oil exchange order with fallback
+  // Create new oil exchange order (database should be configured now)
   async createOrder(orderData: CreateOrderData): Promise<OilOrder> {
     if (!supabase) throw new Error("Supabase not configured");
 
     console.log("Creating order:", orderData);
 
-    try {
-      // Try RPC function first
-      const { data, error } = await supabase.rpc("create_oil_order", {
-        p_used_oil_liters: orderData.used_oil_liters,
-        p_pickup_address: orderData.pickup_address,
-        p_pickup_date: orderData.pickup_date || null,
-        p_pickup_time: orderData.pickup_time || null,
-        p_notes: orderData.notes || null,
-      });
-
-      if (!error && data) {
-        console.log("Order created successfully via RPC:", data);
-        return data as OilOrder;
-      }
-    } catch (rpcError) {
-      console.log("RPC method failed, trying direct insert:", rpcError);
-    }
-
-    try {
-      // Fallback to direct insert
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
-
-      const newOilLiters = Math.floor(orderData.used_oil_liters / 10);
-
-      const { data, error } = await supabase
-        .from("oil_orders")
-        .insert({
-          user_id: user.id,
-          used_oil_liters: orderData.used_oil_liters,
-          new_oil_liters: newOilLiters,
-          exchange_rate: 10,
-          pickup_address: orderData.pickup_address,
-          pickup_date: orderData.pickup_date || null,
-          pickup_time: orderData.pickup_time || null,
-          notes: orderData.notes || null,
-          status: "pending",
-        })
-        .select()
-        .single();
-
-      if (!error && data) {
-        console.log("Order created successfully via direct insert:", data);
-        return data;
-      }
-    } catch (insertError) {
-      console.log(
-        "Direct insert failed, using localStorage fallback:",
-        insertError,
-      );
-    }
-
-    // Final fallback - save to localStorage
-    const orderId = crypto.randomUUID();
+    // Get current user first
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) throw new Error("User not authenticated");
 
-    const order: OilOrder = {
-      id: orderId,
-      user_id: user?.id || "unknown",
-      used_oil_liters: orderData.used_oil_liters,
-      new_oil_liters: Math.floor(orderData.used_oil_liters / 10),
-      exchange_rate: 10,
-      pickup_address: orderData.pickup_address,
-      pickup_date: orderData.pickup_date,
-      pickup_time: orderData.pickup_time,
-      notes: orderData.notes,
-      status: "pending",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+    const newOilLiters = Math.floor(orderData.used_oil_liters / 10);
 
-    // Save to localStorage
-    const existingOrders = JSON.parse(
-      localStorage.getItem("oil_orders") || "[]",
-    );
-    existingOrders.push(order);
-    localStorage.setItem("oil_orders", JSON.stringify(existingOrders));
+    // Try direct insert (tables should exist now)
+    const { data, error } = await supabase
+      .from("oil_orders")
+      .insert({
+        user_id: user.id,
+        used_oil_liters: orderData.used_oil_liters,
+        new_oil_liters: newOilLiters,
+        exchange_rate: 10,
+        pickup_address: orderData.pickup_address,
+        pickup_date: orderData.pickup_date || null,
+        pickup_time: orderData.pickup_time || null,
+        notes: orderData.notes || null,
+        status: "pending",
+      })
+      .select()
+      .single();
 
-    console.log("Order saved to localStorage:", order);
-    return order;
+    if (error) {
+      console.error("Error creating order in Supabase:", error);
+      throw error;
+    }
+
+    console.log("Order created successfully in Supabase:", data);
+    return data;
   },
 
   // Get user's orders with localStorage fallback
