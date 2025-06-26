@@ -147,6 +147,14 @@ const UserDashboard = () => {
   }, [user]);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Manual refresh function
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
+    await loadUserData();
+    setIsRefreshing(false);
+  };
 
   // Handle logout
   const handleSignOut = async () => {
