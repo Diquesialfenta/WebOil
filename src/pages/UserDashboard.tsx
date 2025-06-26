@@ -204,12 +204,7 @@ const UserDashboard = () => {
       );
 
       // Reload data
-      const [stats, orders] = await Promise.all([
-        ordersService.getUserStats(user.id),
-        ordersService.getUserOrders(user.id),
-      ]);
-      setUserStats(stats);
-      setUserOrders(orders);
+      await loadUserData();
     } catch (error) {
       console.error("Error creating order:", error);
       alert("Error al enviar solicitud. Intenta nuevamente.");
