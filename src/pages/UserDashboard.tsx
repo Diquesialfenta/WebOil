@@ -184,10 +184,10 @@ const UserDashboard = () => {
           // If order was completed
           if (
             (payload.eventType === "UPDATE" &&
-              payload.new?.status === "completed" &&
-              payload.old?.status !== "completed") ||
+             payload.new?.status === "completed" &&
+             payload.old?.status !== "completed") ||
             (payload.eventType === "INSERT" &&
-              payload.new?.status === "completed")
+             payload.new?.status === "completed")
           ) {
             console.log("✅ Order completed, refreshing dashboard...");
 
@@ -266,31 +266,7 @@ const UserDashboard = () => {
     }
   };
 
-  // Test function to simulate order completion
-  const testOrderCompletion = () => {
-    if (!user) return;
 
-    console.log("🧪 Testing order completion notification...");
-
-    // Simulate the broadcast message that would come from admin
-    const testPayload = {
-      payload: {
-        type: "ORDER_COMPLETED",
-        order_id: "test-order-123",
-        user_id: user.id,
-        used_oil_liters: 50,
-        new_oil_liters: 5,
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    // Show the notification as if we received it via broadcast
-    setUpdateMessage(
-      `¡Pedido de prueba completado! Entregaste ${testPayload.payload.used_oil_liters}L y recibiste ${testPayload.payload.new_oil_liters}L.`,
-    );
-    setShowUpdateNotification(true);
-
-    // Refresh data
     loadUserData();
   };
 
