@@ -450,6 +450,26 @@ const UserDashboard = () => {
               >
                 Test Update
               </Button>
+
+              {/* Real-time status indicator */}
+              <div className="flex items-center space-x-1 text-xs">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    realtimeStatus === "subscribed"
+                      ? "bg-green-500"
+                      : realtimeStatus === "connecting"
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
+                  }`}
+                ></div>
+                <span className="text-muted-foreground">
+                  {realtimeStatus === "subscribed"
+                    ? "Conectado"
+                    : realtimeStatus === "connecting"
+                      ? "Conectando..."
+                      : "Desconectado"}
+                </span>
+              </div>
             </div>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-1" />
