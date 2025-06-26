@@ -79,32 +79,52 @@ export const ordersService = {
   async getUserStats(userId?: string): Promise<UserStats | null> {
     if (!supabase) throw new Error("Supabase not configured");
 
-    let query = supabase.from("user_stats").select("*");
+    try {
+      let query = supabase.from("user_stats").select("*");
 
-    if (userId) {
-      query = query.eq("user_id", userId);
-    }
-
-    const { data, error } = await query.single();
-
-    if (error) {
-      // If no data found, return default stats
-      if (error.code === "PGRST116") {
-        return {
-          user_id: userId || "",
-          email: "",
-          name: "",
-          total_used_oil_delivered: 0,
-          total_new_oil_received: 0,
-          completed_orders: 0,
-          pending_orders: 0,
-          last_delivery_date: null,
-        };
+      if (userId) {
+        query = query.eq("user_id", userId);
       }
-      throw error;
-    }
 
-    return data;
+      const { data, error } = await query.single();
+
+      if (error) {
+        console.log("getUserStats error:", error);
+
+        // If no data found or view doesn't exist, return default stats
+        if (error.code === "PGRST116" || error.code === "42P01") {
+          console.log(
+            "No stats found or table missing, returning default stats",
+          );
+          return {
+            user_id: userId || "",
+            email: "",
+            name: "",
+            total_used_oil_delivered: 0,
+            total_new_oil_received: 0,
+            completed_orders: 0,
+            pending_orders: 0,
+            last_delivery_date: null,
+          };
+        }
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error in getUserStats:", error);
+      // Return default stats for any error
+      return {
+        user_id: userId || "",
+        email: "",
+        name: "",
+        total_used_oil_delivered: 0,
+        total_new_oil_received: 0,
+        completed_orders: 0,
+        pending_orders: 0,
+        last_delivery_date: null,
+      };
+    }
   },
 
   // Update order status
