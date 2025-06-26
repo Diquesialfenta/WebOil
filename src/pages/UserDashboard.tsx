@@ -148,6 +148,57 @@ const UserDashboard = () => {
     loadUserData();
   }, [user]);
 
+  // Set up real-time subscription for order updates
+  useEffect(() => {
+    if (!user) return;
+
+    console.log("Setting up real-time subscription for user:", user.id);
+
+    // Subscribe to order completion notifications
+    const channel = supabase
+      .channel("order_updates")
+      .on("broadcast", { event: "order_completed" }, (payload) => {
+        console.log("Received real-time order update:", payload);
+
+        // Check if this update is for the current user
+        if (payload.payload?.user_id === user.id) {
+          console.log(
+            "Order update is for current user, refreshing dashboard...",
+          );
+
+          // Show notification
+          setUpdateMessage(
+            `¡Pedido completado! Recibiste ${payload.payload.new_oil_liters}L de aceite nuevo.`,
+          );
+          setShowUpdateNotification(true);
+
+          // Refresh user data
+          loadUserData();
+        }
+      })
+      .subscribe((status) => {
+        console.log("Real-time subscription status:", status);
+      });
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log("Cleaning up real-time subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  // Auto-refresh every 30 seconds (existing functionality)
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      console.log("Auto-refreshing user data...");
+      loadUserData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   // Auto-refresh data every 30 seconds to catch updates from admin
   useEffect(() => {
     if (!user) return;
