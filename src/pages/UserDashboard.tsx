@@ -291,7 +291,7 @@ const UserDashboard = () => {
                           id="direccionUsuario"
                           className="text-base font-semibold text-foreground"
                         >
-                          {userData.direccion}
+                          {defaultAddress}
                         </p>
                       </div>
                     </div>
