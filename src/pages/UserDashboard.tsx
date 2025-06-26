@@ -167,43 +167,45 @@ const UserDashboard = () => {
 
     console.log("Setting up real-time subscription for user:", user.id);
 
-    // Subscribe to order completion notifications
-    const channel = supabase
-      .channel("order_updates")
-      .on("broadcast", { event: "order_completed" }, async (payload) => {
-        console.log("🔔 Received real-time order update:", payload);
+    // Listen to database changes on oil_orders table for this user
+    const ordersChannel = supabase
+      .channel(`oil_orders_user_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "oil_orders",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          console.log("🔔 Database change detected for user orders:", payload);
 
-        // Check if this update is for the current user
-        if (payload.payload?.user_id === user.id) {
-          console.log(
-            "✅ Order update is for current user, refreshing dashboard...",
-          );
+          // If order was completed
+          if (
+            (payload.eventType === "UPDATE" &&
+              payload.new?.status === "completed" &&
+              payload.old?.status !== "completed") ||
+            (payload.eventType === "INSERT" &&
+              payload.new?.status === "completed")
+          ) {
+            console.log("✅ Order completed, refreshing dashboard...");
 
-          // Show notification with detailed info
-          const usedOil = payload.payload.used_oil_liters || 0;
-          const newOil = payload.payload.new_oil_liters || 0;
+            const newOil = payload.new.new_oil_liters || 0;
+            setUpdateMessage(
+              `¡Tu pedido ha sido completado! Recibiste ${newOil}L de aceite nuevo.`,
+            );
+            setShowUpdateNotification(true);
 
-          setUpdateMessage(
-            `¡Pedido completado! Entregaste ${usedOil}L de aceite usado y recibiste ${newOil}L de aceite nuevo.`,
-          );
-          setShowUpdateNotification(true);
-
-          // Force refresh user data
-          console.log("🔄 Refreshing user data after order completion...");
-          await loadUserData();
-
-          // Also reload after a short delay to ensure data is updated
-          setTimeout(async () => {
-            console.log("🔄 Secondary refresh to ensure data consistency...");
+            // Refresh data
             await loadUserData();
-          }, 2000);
-        } else {
-          console.log(
-            "ℹ️ Order update is for different user:",
-            payload.payload?.user_id,
-          );
-        }
-      })
+          } else if (payload.eventType === "INSERT") {
+            // New order created, just refresh without notification
+            console.log("New order created, refreshing data...");
+            await loadUserData();
+          }
+        },
+      )
       .subscribe((status) => {
         console.log("📡 Real-time subscription status:", status);
         setRealtimeStatus(status.toLowerCase());
@@ -214,45 +216,10 @@ const UserDashboard = () => {
         }
       });
 
-    // Also listen to database changes on oil_orders table
-    const ordersChannel = supabase
-      .channel("oil_orders_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "oil_orders",
-          filter: `user_id=eq.${user.id}`,
-        },
-        async (payload) => {
-          console.log("🔔 Database change detected for user orders:", payload);
-
-          if (
-            payload.new?.status === "completed" &&
-            payload.old?.status !== "completed"
-          ) {
-            console.log(
-              "✅ Order status changed to completed, refreshing dashboard...",
-            );
-
-            const newOil = payload.new.new_oil_liters || 0;
-            setUpdateMessage(
-              `¡Tu pedido ha sido completado! Recibiste ${newOil}L de aceite nuevo.`,
-            );
-            setShowUpdateNotification(true);
-
-            await loadUserData();
-          }
-        },
-      )
-      .subscribe();
-
-    // Cleanup subscriptions on unmount
+    // Cleanup subscription on unmount
     return () => {
-      console.log("🧹 Cleaning up real-time subscriptions");
+      console.log("🧹 Cleaning up real-time subscription");
       if (supabase) {
-        supabase.removeChannel(channel);
         supabase.removeChannel(ordersChannel);
       }
     };
