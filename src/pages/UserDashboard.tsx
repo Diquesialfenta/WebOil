@@ -153,38 +153,79 @@ const UserDashboard = () => {
   useEffect(() => {
     if (!user || !supabase) return;
 
-    console.log("Setting up real-time subscription for user:", user.id);
+    console.log('Setting up real-time subscription for user:', user.id);
 
     // Subscribe to order completion notifications
     const channel = supabase
-      .channel("order_updates")
-      .on("broadcast", { event: "order_completed" }, (payload) => {
-        console.log("Received real-time order update:", payload);
+      .channel('order_updates')
+      .on('broadcast', { event: 'order_completed' }, async (payload) => {
+        console.log('🔔 Received real-time order update:', payload);
 
         // Check if this update is for the current user
         if (payload.payload?.user_id === user.id) {
-          console.log(
-            "Order update is for current user, refreshing dashboard...",
-          );
+          console.log('✅ Order update is for current user, refreshing dashboard...');
 
-          // Show notification
-          setUpdateMessage(
-            `¡Pedido completado! Recibiste ${payload.payload.new_oil_liters}L de aceite nuevo.`,
-          );
+          // Show notification with detailed info
+          const usedOil = payload.payload.used_oil_liters || 0;
+          const newOil = payload.payload.new_oil_liters || 0;
+
+          setUpdateMessage(`¡Pedido completado! Entregaste ${usedOil}L de aceite usado y recibiste ${newOil}L de aceite nuevo.`);
           setShowUpdateNotification(true);
 
-          // Refresh user data
-          loadUserData();
+          // Force refresh user data
+          console.log('🔄 Refreshing user data after order completion...');
+          await loadUserData();
+
+          // Also reload after a short delay to ensure data is updated
+          setTimeout(async () => {
+            console.log('🔄 Secondary refresh to ensure data consistency...');
+            await loadUserData();
+          }, 2000);
+        } else {
+          console.log('ℹ️ Order update is for different user:', payload.payload?.user_id);
         }
       })
       .subscribe((status) => {
-        console.log("Real-time subscription status:", status);
+        console.log('📡 Real-time subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to real-time updates');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Error subscribing to real-time updates');
+        }
       });
 
-    // Cleanup subscription on unmount
+    // Also listen to database changes on oil_orders table
+    const ordersChannel = supabase
+      .channel('oil_orders_changes')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'oil_orders',
+        filter: `user_id=eq.${user.id}`
+      }, async (payload) => {
+        console.log('🔔 Database change detected for user orders:', payload);
+
+        if (payload.new?.status === 'completed' && payload.old?.status !== 'completed') {
+          console.log('✅ Order status changed to completed, refreshing dashboard...');
+
+          const newOil = payload.new.new_oil_liters || 0;
+          setUpdateMessage(`¡Tu pedido ha sido completado! Recibiste ${newOil}L de aceite nuevo.`);
+          setShowUpdateNotification(true);
+
+          await loadUserData();
+        }
+      })
+      .subscribe();
+
+    // Cleanup subscriptions on unmount
     return () => {
-      console.log("Cleaning up real-time subscription");
+      console.log('🧹 Cleaning up real-time subscriptions');
       if (supabase) {
+        supabase.removeChannel(channel);
+        supabase.removeChannel(ordersChannel);
+      }
+    };
+  }, [user]);
         supabase.removeChannel(channel);
       }
     };
