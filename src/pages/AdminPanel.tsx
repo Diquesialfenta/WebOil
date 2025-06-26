@@ -144,17 +144,17 @@ const AdminPanel = () => {
     return icons[type as keyof typeof icons] || "📦";
   };
 
-  const filteredRequests =
+  const filteredOrders =
     filterStatus === "all"
-      ? requests
-      : requests.filter((req) => req.status === filterStatus);
+      ? orders
+      : orders.filter((order) => order.status === filterStatus);
 
   const statusCounts = {
-    total: requests.length,
-    pending: requests.filter((r) => r.status === "pending").length,
-    confirmed: requests.filter((r) => r.status === "confirmed").length,
-    inProgress: requests.filter((r) => r.status === "in-progress").length,
-    completed: requests.filter((r) => r.status === "completed").length,
+    total: orders.length,
+    pending: orders.filter((o) => o.status === "pending").length,
+    confirmed: orders.filter((o) => o.status === "confirmed").length,
+    inProgress: orders.filter((o) => o.status === "in_progress").length,
+    completed: orders.filter((o) => o.status === "completed").length,
   };
 
   return (
