@@ -106,16 +106,14 @@ const AdminPanel = () => {
         );
         // Optional: Show admin feedback
         alert(
-          "Pedido marcado como completado. El usuario será notificado automáticamente.",
+          "Order marked as completed. The user will be notified automatically.",
         );
       } else {
         console.log(`✅ Order status updated to: ${newStatus}`);
       }
     } catch (error) {
       console.error("❌ Error updating order status:", error);
-      alert(
-        `Error al actualizar el estado del pedido: ${error.message || "Error desconocido"}`,
-      );
+      alert(`Error updating order status: ${error.message || "Unknown error"}`);
     }
   };
 
