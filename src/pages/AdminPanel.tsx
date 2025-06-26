@@ -92,11 +92,21 @@ const AdminPanel = () => {
     newStatus: OilOrder["status"],
   ) => {
     try {
+      console.log(`Admin updating order ${id} to status: ${newStatus}`);
       await ordersService.updateOrderStatus(id, newStatus);
-      await loadOrders(); // Reload orders after update
+
+      // Reload orders after update
+      await loadOrders();
+
+      // Show success message
+      if (newStatus === "completed") {
+        console.log(
+          "Order marked as completed - user dashboard should update automatically via real-time",
+        );
+      }
     } catch (error) {
       console.error("Error updating order status:", error);
-      alert("Error updating order status");
+      alert(`Error updating order status: ${error.message || "Unknown error"}`);
     }
   };
 
