@@ -15,21 +15,21 @@ CREATE TABLE profiles (
 CREATE TABLE oil_orders (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  
+
   -- Order details
   used_oil_liters INTEGER NOT NULL DEFAULT 0,
   new_oil_liters INTEGER NOT NULL DEFAULT 0,
   exchange_rate INTEGER NOT NULL DEFAULT 10, -- 10:1 ratio
-  
+
   -- Pickup details
   pickup_address TEXT NOT NULL,
   pickup_date DATE,
   pickup_time TEXT,
   notes TEXT,
-  
+
   -- Status tracking
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'in_progress', 'completed', 'cancelled')),
-  
+
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -40,13 +40,13 @@ CREATE TABLE oil_orders (
 CREATE TABLE loyalty_rewards (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  
+
   -- Reward details
   total_liters_delivered INTEGER NOT NULL DEFAULT 0,
   milestone_reached INTEGER NOT NULL DEFAULT 0, -- 1000, 2000, etc.
   reward_description TEXT,
   reward_claimed BOOLEAN DEFAULT FALSE,
-  
+
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   claimed_at TIMESTAMP WITH TIME ZONE
@@ -60,34 +60,39 @@ ALTER TABLE loyalty_rewards ENABLE ROW LEVEL SECURITY;
 -- 5. Create RLS policies
 
 -- Profiles policies
-CREATE POLICY "Users can view own profile" 
-  ON profiles FOR SELECT 
+CREATE POLICY "Users can view own profile"
+  ON profiles FOR SELECT
   USING (auth.uid() = id);
 
-CREATE POLICY "Users can update own profile" 
-  ON profiles FOR UPDATE 
+CREATE POLICY "Users can update own profile"
+  ON profiles FOR UPDATE
   USING (auth.uid() = id);
 
-CREATE POLICY "Users can insert own profile" 
-  ON profiles FOR INSERT 
+CREATE POLICY "Users can insert own profile"
+  ON profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
 -- Oil orders policies
-CREATE POLICY "Users can view own orders" 
-  ON oil_orders FOR SELECT 
+CREATE POLICY "Users can view own orders"
+  ON oil_orders FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can create own orders" 
-  ON oil_orders FOR INSERT 
+CREATE POLICY "Users can create own orders"
+  ON oil_orders FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own orders" 
-  ON oil_orders FOR UPDATE 
+CREATE POLICY "Users can update own orders"
+  ON oil_orders FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- Allow users to delete their own orders (optional)
+CREATE POLICY "Users can delete own orders"
+  ON oil_orders FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Loyalty rewards policies
-CREATE POLICY "Users can view own rewards" 
-  ON loyalty_rewards FOR SELECT 
+CREATE POLICY "Users can view own rewards"
+  ON loyalty_rewards FOR SELECT
   USING (auth.uid() = user_id);
 
 -- 6. Create functions for automatic calculations
@@ -127,7 +132,7 @@ CREATE TRIGGER handle_updated_at_oil_orders
 
 -- 7. Create view for user statistics
 CREATE OR REPLACE VIEW user_stats AS
-SELECT 
+SELECT
   u.id as user_id,
   u.email,
   p.name,
@@ -145,5 +150,5 @@ GROUP BY u.id, u.email, p.name;
 GRANT SELECT ON user_stats TO authenticated;
 
 -- 8. Sample data (optional - for testing)
--- INSERT INTO oil_orders (user_id, used_oil_liters, new_oil_liters, pickup_address, status, notes) 
+-- INSERT INTO oil_orders (user_id, used_oil_liters, new_oil_liters, pickup_address, status, notes)
 -- VALUES (auth.uid(), 50, 5, 'Test Address 123', 'completed', 'Sample completed order');
