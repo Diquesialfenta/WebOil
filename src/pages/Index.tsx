@@ -96,7 +96,21 @@ const Index = () => {
       setUsedOilLiters("");
     } catch (error) {
       console.error("Error creating order:", error);
-      alert("Error submitting request. Please try again.");
+
+      // Check if this is a database setup issue
+      if (
+        error.code === "42P01" ||
+        error.message?.includes("relation") ||
+        error.message?.includes("does not exist")
+      ) {
+        alert(
+          "Database setup required. Please check the dashboard for setup instructions.",
+        );
+      } else {
+        alert(
+          `Error submitting request: ${error.message || "Please try again."}`,
+        );
+      }
     }
   };
 
