@@ -167,22 +167,23 @@ export const ordersService = {
   async getAllOrders(): Promise<OilOrder[]> {
     if (!supabase) throw new Error("Supabase not configured");
 
-    const { data, error } = await supabase
-      .from("oil_orders")
-      .select(
-        `
-        *,
-        profiles!oil_orders_user_id_fkey (
-          name,
-          address,
-          phone
-        )
-      `,
-      )
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("oil_orders")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error) throw error;
-    return data || [];
+      if (error) {
+        console.error("getAllOrders error:", error);
+        throw error;
+      }
+
+      console.log("getAllOrders data:", data);
+      return data || [];
+    } catch (error) {
+      console.error("Error in getAllOrders:", error);
+      throw error;
+    }
   },
 
   // Update user profile
