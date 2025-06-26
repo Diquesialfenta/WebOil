@@ -50,6 +50,7 @@ const AdminPanel = () => {
   const [orders, setOrders] = useState<OilOrder[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadOrders();
