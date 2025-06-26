@@ -64,14 +64,14 @@ const UserDashboard = () => {
   }, [user, navigate]);
 
   // Load real user data from Supabase
-  const loadUserData = async () => {
+  const loadUserData = async (showNotification = false) => {
     if (!user) return;
 
     setIsLoadingData(true);
     try {
       console.log("🔄 Loading user data for:", user.id);
 
-      // Load user statistics and orders
+      // Load user statistics and orders in parallel for better performance
       const [stats, orders] = await Promise.all([
         ordersService.getUserStats(user.id),
         ordersService.getUserOrders(user.id),
@@ -95,9 +95,9 @@ const UserDashboard = () => {
       setUserOrders(orders);
       setShowDebugInfo(false); // Hide debug info on successful load
 
-      // Show update notification if this is a manual refresh
-      if (isRefreshing) {
-        setUpdateMessage("Dashboard updated with latest data!");
+      // Show update notification if requested (manual refresh)
+      if (showNotification || isRefreshing) {
+        setUpdateMessage("¡Dashboard actualizado con los últimos datos!");
         setShowUpdateNotification(true);
       }
     } catch (error: any) {
