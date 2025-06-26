@@ -277,9 +277,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Temporary Notice */}
-      <LocalStorageNotice />
-
       {/* How It Works - Simple & Clear */}
       <section className="py-16 bg-white/50">
         <div className="container mx-auto px-4">
