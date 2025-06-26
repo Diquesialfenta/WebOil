@@ -151,7 +151,7 @@ const UserDashboard = () => {
 
   // Set up real-time subscription for order updates
   useEffect(() => {
-    if (!user) return;
+    if (!user || !supabase) return;
 
     console.log("Setting up real-time subscription for user:", user.id);
 
@@ -184,7 +184,9 @@ const UserDashboard = () => {
     // Cleanup subscription on unmount
     return () => {
       console.log("Cleaning up real-time subscription");
-      supabase.removeChannel(channel);
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [user]);
 
