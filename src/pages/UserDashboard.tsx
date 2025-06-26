@@ -29,6 +29,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { ordersService, UserStats, OilOrder } from "@/lib/orders";
+import { supabase } from "@/lib/supabase";
 import { DatabaseSetupInfo } from "@/components/DatabaseSetupInfo";
 import { DebugInfo } from "@/components/DebugInfo";
 import { UpdateNotification } from "@/components/UpdateNotification";
