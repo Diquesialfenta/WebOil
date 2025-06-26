@@ -255,8 +255,15 @@ const UserDashboard = () => {
   // Manual refresh function
   const handleRefreshData = async () => {
     setIsRefreshing(true);
-    await loadUserData();
-    setIsRefreshing(false);
+    try {
+      await loadUserData(true); // Pass true to show notification
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      setUpdateMessage("Error al actualizar los datos. Inténtalo de nuevo.");
+      setShowUpdateNotification(true);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   // Test function to simulate order completion
