@@ -325,7 +325,7 @@ const AdminPanel = () => {
                     </TableRow>
                   ) : error ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4">
+                      <TableCell colSpan={7} className="text-center py-4">
                         <div className="text-red-600">
                           <AlertCircle className="h-5 w-5 mx-auto mb-2" />
                           <p>{error}</p>
@@ -342,7 +342,7 @@ const AdminPanel = () => {
                     </TableRow>
                   ) : filteredOrders.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4">
+                      <TableCell colSpan={7} className="text-center py-4">
                         No orders found
                       </TableCell>
                     </TableRow>
