@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,10 +21,17 @@ import {
   Droplets,
   Shield,
   UserPlus,
+  LogOut,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { SupabaseSetupInfo } from "@/components/SupabaseSetupInfo";
+import { SessionRecovery } from "@/components/SessionRecovery";
 
 const Auth = () => {
+  const { user, signUp, signIn, signOut } = useAuth();
+  const navigate = useNavigate();
+
   // Registration form state
   const [registerForm, setRegisterForm] = useState({
     name: "",
@@ -48,6 +55,13 @@ const Auth = () => {
   } | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
 
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
   // Registration form handlers
   const handleRegisterChange = (field: string, value: string) => {
     setRegisterForm((prev) => ({ ...prev, [field]: value }));
@@ -69,12 +83,16 @@ const Auth = () => {
         throw new Error("Password must be at least 6 characters");
       }
 
-      // Simulate API call (replace with Firebase Auth)
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Register with Supabase
+      await signUp(
+        registerForm.email,
+        registerForm.password,
+        registerForm.name,
+      );
 
       setRegisterMessage({
         type: "success",
-        text: "Account created successfully! Welcome to Maltero Oil Exchange Program.",
+        text: "Account created successfully! Please check your email to verify your account.",
       });
 
       // Reset form
@@ -106,8 +124,8 @@ const Auth = () => {
         throw new Error("Email and password are required");
       }
 
-      // Simulate API call (replace with Firebase Auth)
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Sign in with Supabase
+      await signIn(loginForm.email, loginForm.password);
 
       setLoginMessage({
         type: "success",
@@ -116,6 +134,11 @@ const Auth = () => {
 
       // Reset form
       setLoginForm({ email: "", password: "" });
+
+      // Redirect to dashboard
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1000);
     } catch (error: any) {
       setLoginMessage({
         type: "error",
@@ -125,6 +148,138 @@ const Auth = () => {
       setLoginLoading(false);
     }
   };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setLoginMessage({
+        type: "success",
+        text: "Signed out successfully!",
+      });
+    } catch (error: any) {
+      setLoginMessage({
+        type: "error",
+        text: error.message || "Error signing out.",
+      });
+    }
+  };
+
+  // If user is logged in, show welcome message
+  if (user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-brand-50/30 to-trust-50/20">
+        {/* Header */}
+        <header className="border-b bg-background/80 backdrop-blur-sm">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <Link to="/" className="transition-transform hover:scale-105">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center w-16 h-16 bg-white rounded-xl p-2 shadow-lg ring-2 ring-brand-100">
+                  <img
+                    src="https://cdn.builder.io/api/v1/assets/966f3cfa0fff4eb68fda2d512d8d0925/maltero-logo-white-background-a132fd?format=webp&width=800"
+                    alt="Maltero Logo"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">
+                    Maltero
+                  </h1>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    Oil Exchange Program
+                  </p>
+                </div>
+              </div>
+            </Link>
+            <div className="flex items-center space-x-4">
+              <Link to="/dashboard">
+                <Button variant="outline" size="sm">
+                  Dashboard
+                </Button>
+              </Link>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-1" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Welcome Section */}
+        <main className="container mx-auto px-4 py-12">
+          <div className="max-w-2xl mx-auto text-center">
+            <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
+              <CardHeader className="text-center pb-6">
+                <div className="bg-green-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle className="h-10 w-10 text-green-600" />
+                </div>
+                <CardTitle className="text-3xl text-green-600">
+                  ¡Bienvenido!
+                </CardTitle>
+                <CardDescription className="text-lg">
+                  Has iniciado sesión exitosamente
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">
+                    Información de tu cuenta:
+                  </h3>
+                  <div className="space-y-3 text-left">
+                    <div className="flex items-center space-x-3">
+                      <Mail className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">
+                          Email
+                        </p>
+                        <p className="font-semibold">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <User className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">
+                          Nombre
+                        </p>
+                        <p className="font-semibold">
+                          {user.user_metadata?.name || "No especificado"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">
+                          Estado
+                        </p>
+                        <p className="font-semibold text-green-600">
+                          Cuenta activa
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Link to="/dashboard" className="block">
+                    <Button className="w-full h-14 bg-brand-600 hover:bg-brand-700 text-white">
+                      <User className="h-5 w-5 mr-2" />
+                      Ir al Dashboard
+                    </Button>
+                  </Link>
+                  <Link to="/" className="block">
+                    <Button variant="outline" className="w-full h-14">
+                      <ArrowLeft className="h-5 w-5 mr-2" />
+                      Ir al Inicio
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-brand-50/30 to-trust-50/20">
@@ -458,6 +613,12 @@ const Auth = () => {
               </TabsContent>
             </Tabs>
           </div>
+
+          {/* Session Recovery */}
+          <SessionRecovery />
+
+          {/* Supabase Setup Info */}
+          <SupabaseSetupInfo />
 
           {/* Benefits Section */}
           <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">

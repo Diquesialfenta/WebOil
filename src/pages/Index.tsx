@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { ordersService } from "@/lib/orders";
 import {
   Card,
   CardContent,
@@ -41,6 +43,7 @@ import {
 import { Link } from "react-router-dom";
 
 const Index = () => {
+  const { user, signOut } = useAuth();
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [wasteType, setWasteType] = useState("oil");
@@ -57,45 +60,46 @@ const Index = () => {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const requestId = generateRequestId();
+    // Check if user is logged in
+    if (!user) {
+      alert("Please sign in first to submit an oil exchange request.");
+      return;
+    }
+
     const newOilLiters = Math.floor(parseInt(usedOilLiters || "0") / 10);
 
-    const newRequest = {
-      id: requestId,
-      date: selectedDate,
-      time: selectedTime,
-      wasteType,
-      address,
-      notes,
-      usedOilLiters: parseInt(usedOilLiters || "0"),
-      newOilLiters,
-      status: "pending" as const,
-      createdAt: new Date(),
-    };
+    try {
+      // Now use Supabase since database is configured
+      const newOrder = await ordersService.createOrder({
+        used_oil_liters: parseInt(usedOilLiters || "0"),
+        pickup_address: address,
+        pickup_date: selectedDate,
+        pickup_time: selectedTime,
+        notes: notes || undefined,
+      });
 
-    // Save to localStorage (in production, this would be sent to your backend)
-    const existingRequests = JSON.parse(
-      localStorage.getItem("wasteRequests") || "[]",
-    );
-    const updatedRequests = [...existingRequests, newRequest];
-    localStorage.setItem("wasteRequests", JSON.stringify(updatedRequests));
+      console.log("Order created in Supabase:", newOrder);
 
-    console.log("New exchange request:", newRequest);
+      alert(
+        `Exchange Request Submitted!\n\nOrder ID: ${newOrder.id.slice(-8)}\n\nYou'll receive: ${newOilLiters}L of new oil\nFor: ${usedOilLiters}L of used oil\n\nWe'll contact you soon to schedule the exchange!`,
+      );
 
-    alert(
-      `Exchange Request Submitted!\n\nRequest ID: ${requestId.slice(-8)}\n\nYou'll receive: ${newOilLiters}L of new oil\nFor: ${usedOilLiters}L of used oil\n\nWe'll contact you soon to schedule the exchange!`,
-    );
-
-    // Reset form
-    setSelectedDate("");
-    setSelectedTime("");
-    setWasteType("oil");
-    setAddress("");
-    setNotes("");
-    setUsedOilLiters("");
+      // Reset form
+      setSelectedDate("");
+      setSelectedTime("");
+      setWasteType("oil");
+      setAddress("");
+      setNotes("");
+      setUsedOilLiters("");
+    } catch (error) {
+      console.error("Error creating order:", error);
+      alert(
+        `Error submitting request: ${error.message || "Please try again."}`,
+      );
+    }
   };
 
   const timeSlots = [
@@ -139,19 +143,26 @@ const Index = () => {
           <div className="flex items-center space-x-4">
             <Badge variant="secondary" className="hidden sm:flex">
               <Phone className="h-3 w-3 mr-1" />
-              +1 (555) 123-4567
+              +356 9919 0222
             </Badge>
-            <Link to="/admin">
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-1" />
-                Admin
-              </Button>
-            </Link>
-            <Link to="/auth">
-              <Button variant="outline" size="sm">
-                Sign In
-              </Button>
-            </Link>
+            {user ? (
+              <div className="flex items-center space-x-2">
+                <Link to="/dashboard">
+                  <Button variant="outline" size="sm">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={() => signOut()}>
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <Link to="/auth">
+                <Button variant="outline" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -643,9 +654,11 @@ const Index = () => {
             <div>
               <h4 className="font-semibold mb-4">Contact</h4>
               <ul className="space-y-2 text-sm opacity-80">
-                <li>+1 (555) 123-4567</li>
-                <li>info@maltero.com</li>
-                <li>San Francisco, CA</li>
+                <li>+356 9919 0222</li>
+                <li>malteromalta@gmail.com</li>
+                <li>No. 1, Tal-Barrani Industrial Park</li>
+                <li>Triq il-Belt Valletta, Ghaxaq, Malta</li>
+                <li>Environmental Permit No. 017/16/A</li>
                 <li>Mon-Fri: 8AM-6PM</li>
               </ul>
             </div>

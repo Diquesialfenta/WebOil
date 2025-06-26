@@ -23,52 +23,275 @@ import {
   Phone,
   Settings,
   Edit,
+  LogOut,
+  RefreshCw,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { ordersService, UserStats, OilOrder } from "@/lib/orders";
+import { supabase } from "@/lib/supabase";
+import { DatabaseSetupInfo } from "@/components/DatabaseSetupInfo";
+import { DebugInfo } from "@/components/DebugInfo";
+import { UpdateNotification } from "@/components/UpdateNotification";
+import { useAuthErrorHandler } from "@/hooks/useAuthErrorHandler";
 
 const UserDashboard = () => {
-  // Estado del usuario - estos datos vendrían de Firebase/backend
-  const [userData, setUserData] = useState({
-    nombre: "Juan Carlos Pérez",
-    email: "juan.perez@email.com",
-    direccion: "Calle Principal 123, Ciudad de México",
-    litrosEntregados: 45,
-    litrosCanjeados: 4,
-    ultimaEntrega: "2024-12-15",
-    proximoMilestone: 1000,
-    showRequestButton: true,
-  });
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  // Handle auth errors and redirect if needed
+  useAuthErrorHandler();
+
+  // Real user data from Supabase
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [userOrders, setUserOrders] = useState<OilOrder[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [showDatabaseSetup, setShowDatabaseSetup] = useState(false);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState("");
+  const [realtimeStatus, setRealtimeStatus] = useState<string>("disconnected");
+
+  // Static address for now - can be made dynamic later
+  const defaultAddress =
+    "No. 1, Tal-Barrani Industrial Park, Triq il-Belt Valletta, Ghaxaq, Malta";
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [user, navigate]);
+
+  // Load real user data from Supabase
+  const loadUserData = async (showNotification = false) => {
+    if (!user) return;
+
+    setIsLoadingData(true);
+    try {
+      console.log("🔄 Loading user data for:", user.id);
+
+      // Load user statistics and orders in parallel for better performance
+      const [stats, orders] = await Promise.all([
+        ordersService.getUserStats(user.id),
+        ordersService.getUserOrders(user.id),
+      ]);
+
+      console.log("📊 Loaded stats:", stats);
+      console.log("📦 Loaded orders:", orders);
+
+      // Detailed logging for completed orders
+      const completedOrders =
+        orders?.filter((order) => order.status === "completed") || [];
+      console.log("✅ Completed orders:", completedOrders);
+      console.log("📈 Statistics breakdown:", {
+        total_used_oil: stats?.total_used_oil_delivered || 0,
+        total_new_oil: stats?.total_new_oil_received || 0,
+        completed_count: stats?.completed_orders || 0,
+        last_delivery: stats?.last_delivery_date || null,
+      });
+
+      setUserStats(stats);
+      setUserOrders(orders);
+      setShowDebugInfo(false); // Hide debug info on successful load
+
+      // Show update notification if requested (manual refresh)
+      if (showNotification) {
+        setUpdateMessage("Dashboard updated with latest data!");
+        setShowUpdateNotification(true);
+      }
+    } catch (error: any) {
+      console.error("Error loading user data:", error);
+
+      // Better error logging
+      const errorDetails = {
+        message: error?.message || "Unknown error",
+        code: error?.code || "No code",
+        details: error?.details || "No details",
+        hint: error?.hint || "No hint",
+        stack: error?.stack || "No stack",
+      };
+      console.error("Error details:", errorDetails);
+
+      // More specific error messages
+      let errorMessage = "Unknown error occurred";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      }
+      console.error(`Specific error: ${errorMessage}`);
+
+      // Tables should exist now, but keep fallback just in case
+      if (
+        error?.code === "42P01" ||
+        error?.message?.includes("relation") ||
+        error?.message?.includes("does not exist")
+      ) {
+        setShowDatabaseSetup(true);
+        console.error("Database tables missing - showing setup instructions");
+      }
+
+      // Check for authentication issues
+      if (error?.code === "PGRST301" || error?.message?.includes("JWT")) {
+        console.error("Authentication issue detected");
+      }
+
+      // Show debug info for persistent errors
+      setShowDebugInfo(true);
+
+      // Set default stats if error
+      setUserStats({
+        user_id: user.id,
+        email: user.email || "",
+        name: user.user_metadata?.name || "Usuario",
+        total_used_oil_delivered: 0,
+        total_new_oil_received: 0,
+        completed_orders: 0,
+        pending_orders: 0,
+        last_delivery_date: null,
+      });
+      setUserOrders([]);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUserData();
+  }, [user]);
+
+  // Set up real-time subscription for order updates
+  useEffect(() => {
+    if (!user || !supabase) return;
+
+    console.log("Setting up real-time subscription for user:", user.id);
+
+    // Listen to database changes on oil_orders table for this user
+    const ordersChannel = supabase
+      .channel(`oil_orders_user_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "oil_orders",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          console.log("🔔 Database change detected for user orders:", payload);
+
+          // Handle ANY status change - orders must update immediately
+          if (
+            payload.eventType === "UPDATE" &&
+            payload.new?.status !== payload.old?.status
+          ) {
+            console.log(
+              `✅ Order status changed from ${payload.old?.status} to ${payload.new?.status}, refreshing dashboard...`,
+            );
+
+            let message = "";
+
+            // Different messages based on status change
+            if (payload.new?.status === "completed") {
+              const newOil = payload.new.new_oil_liters || 0;
+              message = `Your order has been completed! You received ${newOil}L of new oil.`;
+            } else if (payload.new?.status === "confirmed") {
+              message = `Your order has been confirmed! The process is underway.`;
+            } else if (payload.new?.status === "in_progress") {
+              message = `Your order is in progress! We're working on it.`;
+            } else if (payload.new?.status === "cancelled") {
+              message = `Your order has been cancelled. Contact us if you have questions.`;
+            } else {
+              message = `Your order status updated: ${payload.new?.status}`;
+            }
+
+            setUpdateMessage(message);
+            setShowUpdateNotification(true);
+
+            // ALWAYS refresh data when status changes
+            await loadUserData();
+          } else if (payload.eventType === "INSERT") {
+            // New order created, refresh without notification
+            console.log("New order created, refreshing data...");
+            await loadUserData();
+          }
+        },
+      )
+      .subscribe((status) => {
+        console.log("📡 Real-time subscription status:", status);
+        setRealtimeStatus(status.toLowerCase());
+        if (status === "SUBSCRIBED") {
+          console.log("✅ Successfully subscribed to real-time updates");
+        } else if (status === "CHANNEL_ERROR") {
+          console.error("❌ Error subscribing to real-time updates");
+        }
+      });
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log("🧹 Cleaning up real-time subscription");
+      if (supabase) {
+        supabase.removeChannel(ordersChannel);
+      }
+    };
+  }, [user]);
+
+  // Auto-refresh every 30 seconds (existing functionality)
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      console.log("Auto-refreshing user data...");
+      loadUserData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Calcular progreso hacia el próximo premio (cada 1000L)
-  const progresoHaciaPremio = (userData.litrosEntregados % 1000) / 10; // Convertir a porcentaje
-  const litrosParaPremio = 1000 - (userData.litrosEntregados % 1000);
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadUserData(true); // Pass true to show notification
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      setUpdateMessage("Error updating data. Please try again.");
+      setShowUpdateNotification(true);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
-  // Simular solicitud de aceite nuevo
-  const handleSolicitarAceite = async () => {
+  const handleSignOut = async () => {
     setIsLoading(true);
     try {
-      // Aquí iría la lógica para conectar con el backend
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      alert(
-        "¡Solicitud enviada! Te contactaremos pronto para coordinar la entrega.",
-      );
+      await signOut();
+      navigate("/");
     } catch (error) {
-      alert("Error al enviar solicitud. Intenta nuevamente.");
+      console.error("Error signing out:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Formatear fecha
-  const formatearFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString("es-ES", {
+  // Format date
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
   };
+
+  // Calculate progress towards next reward (every 1000L) using real data
+  const litrosEntregados = userStats?.total_used_oil_delivered || 0;
+  const litrosCanjeados = userStats?.total_new_oil_received || 0;
+  const progresoHaciaPremio = (litrosEntregados % 1000) / 10; // Convert to percentage
+  const litrosParaPremio = 1000 - (litrosEntregados % 1000);
+  const availableNewOil = Math.floor(litrosEntregados / 10) - litrosCanjeados;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-brand-50/30 to-trust-50/20">
@@ -95,20 +318,49 @@ const UserDashboard = () => {
           <div className="flex items-center space-x-4">
             <Badge variant="secondary" className="hidden sm:flex">
               <Phone className="h-3 w-3 mr-1" />
-              +1 (555) 123-4567
+              +356 9919 0222
             </Badge>
-            <Link to="/admin">
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-1" />
-                Admin
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshData}
+                disabled={isRefreshing}
+              >
+                <RefreshCw
+                  className={`h-4 w-4 mr-1 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+                {isRefreshing ? "Updating..." : "Refresh"}
               </Button>
-            </Link>
-            <Link to="/">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Home
-              </Button>
-            </Link>
+
+              {/* Real-time status indicator */}
+              <div
+                className={`flex items-center space-x-1 text-xs ${
+                  realtimeStatus === "subscribed"
+                    ? "text-green-600"
+                    : realtimeStatus === "connecting"
+                      ? "text-yellow-600"
+                      : "text-red-600"
+                }`}
+              >
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    realtimeStatus === "subscribed"
+                      ? "bg-green-500"
+                      : realtimeStatus === "connecting"
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
+                  }`}
+                ></div>
+                <span className="text-muted-foreground">
+                  {realtimeStatus === "subscribed"
+                    ? "Online"
+                    : realtimeStatus === "connecting"
+                      ? "Connecting..."
+                      : "Offline"}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -124,290 +376,333 @@ const UserDashboard = () => {
                 <img
                   src="https://cdn.builder.io/api/v1/assets/966f3cfa0fff4eb68fda2d512d8d0925/maltero-logo-white-background-a132fd?format=webp&width=800"
                   alt="Maltero Background"
-                  className="w-24 h-24 object-contain animate-float"
+                  className="w-20 h-20 object-contain"
                 />
               </div>
-              <div className="flex items-center justify-between relative z-10">
-                <div>
-                  <h1
-                    id="saludoUsuario"
-                    className="text-2xl md:text-3xl font-bold mb-2"
-                  >
-                    Hola, <span id="nombreUsuario">{userData.nombre}</span>! 👋
-                  </h1>
-                  <p className="text-white/90 text-lg">
-                    Bienvenido a tu panel de intercambio de aceite
-                  </p>
-                </div>
-                <div className="hidden md:block">
-                  <div className="bg-white/20 rounded-full p-4 ring-4 ring-white/30">
-                    <img
-                      src="https://cdn.builder.io/api/v1/assets/966f3cfa0fff4eb68fda2d512d8d0925/maltero-logo-white-background-a132fd?format=webp&width=800"
-                      alt="Maltero Logo"
-                      className="w-12 h-12 object-contain"
-                    />
+              <div className="relative z-10">
+                <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                  Welcome, {user?.user_metadata?.name || "User"}!
+                </h2>
+                <p className="text-white/90 mb-4">
+                  Your control center for the oil exchange program
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Mail className="h-4 w-4" />
+                    <span className="text-sm">{user?.email}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-4 w-4" />
+                    <span className="text-sm">Malta</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Dashboard Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Datos Personales */}
-            <div className="lg:col-span-1">
-              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm h-fit">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <User className="h-5 w-5 mr-2 text-trust-600" />
-                    Datos Personales
-                  </CardTitle>
-                  <CardDescription>Tu información de perfil</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <User className="h-5 w-5 text-gray-500 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600">
-                          Nombre completo
-                        </p>
-                        <p
-                          id="nombreCompleto"
-                          className="text-base font-semibold text-foreground"
-                        >
-                          {userData.nombre}
-                        </p>
-                      </div>
+          {/* Statistics Overview */}
+          <div className="mb-8">
+            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl text-brand-700">
+                  Exchange Statistics
+                </CardTitle>
+                <CardDescription>Summary of your oil exchanges</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Litros Entregados */}
+                  <div className="text-center p-4 bg-red-50 rounded-xl border border-red-100">
+                    <div className="bg-red-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                      <Droplets className="h-6 w-6 text-white" />
                     </div>
-
-                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <Mail className="h-5 w-5 text-gray-500 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600">
-                          Correo electrónico
-                        </p>
-                        <p
-                          id="emailUsuario"
-                          className="text-base font-semibold text-foreground"
-                        >
-                          {userData.email}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600">
-                          Dirección
-                        </p>
-                        <p
-                          id="direccionUsuario"
-                          className="text-base font-semibold text-foreground"
-                        >
-                          {userData.direccion}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button variant="outline" className="w-full mt-4">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar Información
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Actividad y Estadísticas */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Estadísticas Principales */}
-              <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <TrendingUp className="h-5 w-5 mr-2 text-brand-600" />
-                    Tu Actividad de Intercambio
-                  </CardTitle>
-                  <CardDescription>
-                    Resumen de tus intercambios de aceite
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Litros Entregados */}
-                    <div className="text-center p-4 bg-red-50 rounded-xl border border-red-100">
-                      <div className="bg-red-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                        <Droplets className="h-6 w-6 text-white" />
-                      </div>
-                      <div
-                        className="text-3xl font-bold text-red-600"
-                        id="litrosEntregados"
-                      >
-                        {userData.litrosEntregados}L
-                      </div>
-                      <p className="text-sm font-medium text-red-700">
-                        Litros de aceite entregados
-                      </p>
-                    </div>
-
-                    {/* Litros Canjeados */}
-                    <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
-                      <div className="bg-green-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                        <Recycle className="h-6 w-6 text-white" />
-                      </div>
-                      <div
-                        className="text-3xl font-bold text-green-600"
-                        id="litrosCanjeados"
-                      >
-                        {userData.litrosCanjeados}L
-                      </div>
-                      <p className="text-sm font-medium text-green-700">
-                        Litros de aceite nuevo obtenidos
-                      </p>
-                    </div>
-
-                    {/* Última Entrega */}
-                    <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
-                      <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                        <Calendar className="h-6 w-6 text-white" />
-                      </div>
-                      <div
-                        className="text-lg font-bold text-blue-600"
-                        id="ultimaEntrega"
-                      >
-                        {formatearFecha(userData.ultimaEntrega)}
-                      </div>
-                      <p className="text-sm font-medium text-blue-700">
-                        Última entrega
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Programa de Fidelidad */}
-              <Card className="shadow-xl border-0 bg-gradient-to-r from-purple-50 to-pink-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Award className="h-5 w-5 mr-2 text-purple-600" />
-                    Programa de Fidelidad
-                  </CardTitle>
-                  <CardDescription>
-                    Progreso hacia tu próximo premio especial
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">
-                      Progreso hacia 1000L
-                    </span>
-                    <span className="text-sm font-bold text-purple-600">
-                      {userData.litrosEntregados}/1000L
-                    </span>
-                  </div>
-
-                  <Progress value={progresoHaciaPremio} className="h-3" />
-
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">
-                      Faltan {litrosParaPremio}L para tu próximo premio
-                    </span>
-                    <Badge
-                      variant="secondary"
-                      className="bg-purple-100 text-purple-700"
+                    <div
+                      className="text-3xl font-bold text-red-600"
+                      id="litrosEntregados"
                     >
-                      <Gift className="h-3 w-3 mr-1" />
-                      Premio: Sorpresa especial
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Botón de Solicitud */}
-              {userData.showRequestButton && (
-                <Card className="shadow-xl border-0 bg-gradient-to-r from-brand-100 to-brand-50">
-                  <CardContent className="pt-6">
-                    <div className="text-center space-y-4">
-                      <div className="bg-brand-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
-                        <Droplets className="h-8 w-8 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-foreground mb-2">
-                          ¿Tienes aceite nuevo disponible?
-                        </h3>
-                        <p className="text-muted-foreground mb-4">
-                          Solicita la entrega de tu aceite nuevo basado en tus
-                          intercambios anteriores
-                        </p>
-                      </div>
-
-                      <Button
-                        id="botonCanje"
-                        onClick={handleSolicitarAceite}
-                        disabled={isLoading}
-                        className="bg-brand-600 hover:bg-brand-700 text-white px-8 py-3 text-lg h-14"
-                      >
-                        {isLoading ? (
-                          <div className="flex items-center">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                            Enviando solicitud...
-                          </div>
-                        ) : (
-                          <>
-                            <Gift className="h-5 w-5 mr-2" />
-                            Solicitar aceite nuevo
-                          </>
-                        )}
-                      </Button>
-
-                      <p className="text-xs text-muted-foreground">
-                        * Basado en tu ratio de intercambio actual:{" "}
-                        {userData.litrosCanjeados}L disponibles
-                      </p>
+                      {isLoadingData ? "..." : `${litrosEntregados}L`}
                     </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                    <p className="text-sm font-medium text-red-700">
+                      Liters of used oil delivered
+                    </p>
+                  </div>
+
+                  {/* New Oil Received */}
+                  <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
+                    <div className="bg-green-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                      <Recycle className="h-6 w-6 text-white" />
+                    </div>
+                    <div
+                      className="text-3xl font-bold text-green-600"
+                      id="litrosCanjeados"
+                    >
+                      {isLoadingData ? "..." : `${litrosCanjeados}L`}
+                    </div>
+                    <p className="text-sm font-medium text-green-700">
+                      Liters of new oil received
+                    </p>
+                  </div>
+
+                  {/* Last Delivery */}
+                  <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                      <Calendar className="h-6 w-6 text-white" />
+                    </div>
+                    <div
+                      className="text-lg font-bold text-blue-600"
+                      id="ultimaEntrega"
+                    >
+                      {isLoadingData
+                        ? "..."
+                        : userStats?.last_delivery_date
+                          ? formatDate(
+                              userStats.last_delivery_date.split("T")[0],
+                            )
+                          : "No deliveries"}
+                    </div>
+                    <p className="text-sm font-medium text-blue-700">
+                      Last delivery
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Información Adicional */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border-0 bg-white/80 shadow-lg">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <div className="bg-trust-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">
-                    <Recycle className="h-6 w-6 text-trust-600" />
+          {/* Progress towards Reward */}
+          <div className="mb-8">
+            <Card className="shadow-xl border-0 bg-gradient-to-r from-purple-50 to-pink-50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-purple-700">
+                  <Gift className="h-6 w-6" />
+                  <span>Progress to next reward</span>
+                </CardTitle>
+                <CardDescription>
+                  Every 1000L delivered you receive a special reward
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-purple-600">
+                      Current progress
+                    </span>
+                    <span className="text-sm font-bold text-purple-600">
+                      {litrosEntregados}/1000L
+                    </span>
                   </div>
-                  <h3 className="font-semibold mb-2">Ratio de Intercambio</h3>
-                  <p className="text-2xl font-bold text-trust-600">10:1</p>
-                  <p className="text-sm text-muted-foreground">
-                    10L aceite usado = 1L aceite nuevo
-                  </p>
+                  <Progress
+                    value={progresoHaciaPremio}
+                    className="h-3 bg-white/50"
+                  />
+                  <div className="text-center">
+                    <p className="text-sm text-purple-600">
+                      You need{" "}
+                      <span className="font-bold">{litrosParaPremio}L</span>{" "}
+                      more for your next reward
+                    </p>
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Available Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Make New Request */}
+            <Card className="shadow-xl border-0 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+              <CardHeader className="text-center">
+                <div className="bg-brand-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                  <Droplets className="h-8 w-8 text-brand-600" />
+                </div>
+                <CardTitle className="text-brand-700">New Exchange</CardTitle>
+                <CardDescription>Request used oil collection</CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Link to="/">
+                  <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white">
+                    <Droplets className="h-4 w-4 mr-2" />
+                    Make Request
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
-            <Card className="border-0 bg-white/80 shadow-lg">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <div className="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">
-                    <Award className="h-6 w-6 text-green-600" />
-                  </div>
-                  <h3 className="font-semibold mb-2">Impacto Ambiental</h3>
+            {/* Available Oil */}
+            <Card className="shadow-xl border-0 bg-gradient-to-br from-green-50 to-emerald-50">
+              <CardHeader className="text-center">
+                <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                  <Award className="h-8 w-8 text-green-600" />
+                </div>
+                <CardTitle className="text-green-700">Available Oil</CardTitle>
+                <CardDescription>New oil ready to collect</CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="mb-4">
                   <p className="text-2xl font-bold text-green-600">
-                    {Math.round(userData.litrosEntregados * 0.95)}L
+                    {Math.round(litrosEntregados * 0.95)}L
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    Aceite reciclado correctamente
-                  </p>
+                  <p className="text-sm text-green-600">available to collect</p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full border-green-200 text-green-700 hover:bg-green-50"
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  Contact to Collect
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Orders */}
+          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <TrendingUp className="h-6 w-6 text-brand-600" />
+                <span>Recent Requests</span>
+              </CardTitle>
+              <CardDescription>
+                History of your latest exchange requests
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingData ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading requests...</p>
+                </div>
+              ) : userOrders && userOrders.length > 0 ? (
+                <div className="space-y-4">
+                  {userOrders.slice(0, 5).map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div
+                          className={`w-3 h-3 rounded-full ${
+                            order.status === "completed"
+                              ? "bg-green-500"
+                              : order.status === "pending"
+                                ? "bg-yellow-500"
+                                : order.status === "confirmed"
+                                  ? "bg-blue-500"
+                                  : "bg-gray-400"
+                          }`}
+                        ></div>
+                        <div>
+                          <p className="font-medium">
+                            {order.used_oil_liters}L used oil →{" "}
+                            {order.new_oil_liters}L new oil
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {order.pickup_date || "Date to be confirmed"}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge
+                        variant={
+                          order.status === "completed"
+                            ? "default"
+                            : order.status === "pending"
+                              ? "secondary"
+                              : "outline"
+                        }
+                      >
+                        {order.status === "completed"
+                          ? "Completed"
+                          : order.status === "pending"
+                            ? "Pending"
+                            : order.status === "confirmed"
+                              ? "Confirmed"
+                              : order.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Droplets className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>You don't have any requests yet</p>
+                  <p className="text-sm">Make your first exchange request!</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Contact Information */}
+          <div className="mt-8">
+            <Card className="shadow-xl border-0 bg-gradient-to-r from-blue-50 to-cyan-50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-blue-700">
+                  <Phone className="h-6 w-6" />
+                  <span>Contact Information</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-medium text-blue-700">Phone</p>
+                    <p className="text-blue-600">+356 9919 0222</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-blue-700">Email</p>
+                    <p className="text-blue-600">malteromalta@gmail.com</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="font-medium text-blue-700">Address</p>
+                    <p className="text-blue-600">{defaultAddress}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="font-medium text-blue-700">
+                      Environmental Permit No. 017/16/A
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Account Actions */}
+          <div className="mt-8 flex flex-col sm:flex-row gap-4">
+            <Button
+              variant="outline"
+              onClick={handleSignOut}
+              disabled={isLoading}
+              className="flex-1"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              {isLoading ? "Signing out..." : "Sign Out"}
+            </Button>
+            <Link to="/" className="flex-1">
+              <Button variant="outline" className="w-full">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
           </div>
         </div>
       </main>
+
+      {/* Conditional Components */}
+      {showUpdateNotification && (
+        <UpdateNotification
+          message={updateMessage}
+          onClose={() => setShowUpdateNotification(false)}
+        />
+      )}
+
+      {showDatabaseSetup && <DatabaseSetupInfo />}
+
+      {showDebugInfo && (
+        <DebugInfo
+          userStats={userStats}
+          userOrders={userOrders}
+          user={user}
+          onClose={() => setShowDebugInfo(false)}
+        />
+      )}
     </div>
   );
 };
