@@ -68,7 +68,7 @@ const UserDashboard = () => {
 
     setIsLoadingData(true);
     try {
-      console.log("Loading user data for:", user.id);
+      console.log("🔄 Loading user data for:", user.id);
 
       // Load user statistics and orders
       const [stats, orders] = await Promise.all([
@@ -76,8 +76,19 @@ const UserDashboard = () => {
         ordersService.getUserOrders(user.id),
       ]);
 
-      console.log("Loaded stats:", stats);
-      console.log("Loaded orders:", orders);
+      console.log("📊 Loaded stats:", stats);
+      console.log("📦 Loaded orders:", orders);
+
+      // Detailed logging for completed orders
+      const completedOrders =
+        orders?.filter((order) => order.status === "completed") || [];
+      console.log("✅ Completed orders:", completedOrders);
+      console.log("📈 Statistics breakdown:", {
+        total_used_oil: stats?.total_used_oil_delivered || 0,
+        total_new_oil: stats?.total_new_oil_received || 0,
+        completed_count: stats?.completed_orders || 0,
+        last_delivery: stats?.last_delivery_date || null,
+      });
 
       setUserStats(stats);
       setUserOrders(orders);
