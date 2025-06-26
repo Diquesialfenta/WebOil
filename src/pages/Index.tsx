@@ -73,34 +73,19 @@ const Index = () => {
     const newOilLiters = Math.floor(parseInt(usedOilLiters || "0") / 10);
 
     try {
-      // Create order directly in localStorage for now (bypassing Supabase issues)
-      const orderId = crypto.randomUUID();
-      const newOrder = {
-        id: orderId,
-        user_id: user.id,
+      // Now use Supabase since database is configured
+      const newOrder = await ordersService.createOrder({
         used_oil_liters: parseInt(usedOilLiters || "0"),
-        new_oil_liters: newOilLiters,
-        exchange_rate: 10,
         pickup_address: address,
         pickup_date: selectedDate,
         pickup_time: selectedTime,
-        notes: notes || null,
-        status: "pending" as const,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+        notes: notes || undefined,
+      });
 
-      // Save to localStorage
-      const existingOrders = JSON.parse(
-        localStorage.getItem("oil_orders") || "[]",
-      );
-      existingOrders.push(newOrder);
-      localStorage.setItem("oil_orders", JSON.stringify(existingOrders));
-
-      console.log("Order saved to localStorage:", newOrder);
+      console.log("Order created in Supabase:", newOrder);
 
       alert(
-        `Exchange Request Submitted!\n\nOrder ID: ${orderId.slice(-8)}\n\nYou'll receive: ${newOilLiters}L of new oil\nFor: ${usedOilLiters}L of used oil\n\nWe'll contact you soon to schedule the exchange!\n\n(Note: Using local storage while database is being configured)`,
+        `Exchange Request Submitted!\n\nOrder ID: ${newOrder.id.slice(-8)}\n\nYou'll receive: ${newOilLiters}L of new oil\nFor: ${usedOilLiters}L of used oil\n\nWe'll contact you soon to schedule the exchange!`,
       );
 
       // Reset form
