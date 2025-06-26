@@ -44,6 +44,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ordersService, OilOrder } from "@/lib/orders";
 
 export interface WasteRequest {
   id: string;
