@@ -24,6 +24,7 @@ import {
   Settings,
   Edit,
   LogOut,
+  RefreshCw,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -249,6 +250,17 @@ const UserDashboard = () => {
               <Phone className="h-3 w-3 mr-1" />
               +356 9919 0222
             </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefreshData}
+              disabled={isRefreshing}
+            >
+              <RefreshCw
+                className={`h-4 w-4 mr-1 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              {isRefreshing ? "Updating..." : "Refresh"}
+            </Button>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-1" />
               Sign Out
