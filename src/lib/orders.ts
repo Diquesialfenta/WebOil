@@ -128,7 +128,7 @@ export const ordersService = {
     return order;
   },
 
-  // Get user's orders
+  // Get user's orders with localStorage fallback
   async getUserOrders(userId?: string): Promise<OilOrder[]> {
     if (!supabase) throw new Error("Supabase not configured");
 
@@ -144,20 +144,29 @@ export const ordersService = {
 
       const { data, error } = await query;
 
-      if (error) {
-        console.log("getUserOrders error:", error);
-
-        // If table doesn't exist, return empty array
-        if (error.code === "42P01") {
-          console.log("oil_orders table does not exist, returning empty array");
-          return [];
-        }
-        throw error;
+      if (!error && data) {
+        console.log("Orders loaded from Supabase:", data);
+        return data;
       }
 
-      return data || [];
+      console.log("Supabase failed, checking localStorage:", error);
     } catch (error) {
-      console.error("Error in getUserOrders:", error);
+      console.log("Supabase error, using localStorage fallback:", error);
+    }
+
+    // Fallback to localStorage
+    try {
+      const localOrders = JSON.parse(
+        localStorage.getItem("oil_orders") || "[]",
+      );
+      const userOrders = userId
+        ? localOrders.filter((order: OilOrder) => order.user_id === userId)
+        : localOrders;
+
+      console.log("Orders loaded from localStorage:", userOrders);
+      return userOrders;
+    } catch (error) {
+      console.error("Error loading from localStorage:", error);
       return [];
     }
   },
