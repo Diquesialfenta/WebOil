@@ -372,17 +372,35 @@ const UserDashboard = () => {
               <Phone className="h-3 w-3 mr-1" />
               +356 9919 0222
             </Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefreshData}
-              disabled={isRefreshing}
-            >
-              <RefreshCw
-                className={`h-4 w-4 mr-1 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-              {isRefreshing ? "Updating..." : "Refresh"}
-            </Button>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshData}
+                disabled={isRefreshing}
+              >
+                <RefreshCw
+                  className={`h-4 w-4 mr-1 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+                {isRefreshing ? "Updating..." : "Refresh"}
+              </Button>
+
+              {/* Debug button - remove in production */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  console.log("🔍 Current userStats:", userStats);
+                  console.log("🔍 Current userOrders:", userOrders);
+                  console.log("🔍 User ID:", user?.id);
+                  alert(
+                    `Stats: ${userStats?.total_used_oil_delivered || 0}L entregados, ${userStats?.total_new_oil_received || 0}L recibidos. Ver consola para más detalles.`,
+                  );
+                }}
+              >
+                Debug
+              </Button>
+            </div>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-1" />
               Sign Out
